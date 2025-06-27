@@ -1,11 +1,10 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading } = useSecureAuth();
 
   useEffect(() => {
     if (!loading) {

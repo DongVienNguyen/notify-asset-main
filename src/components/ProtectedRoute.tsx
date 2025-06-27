@@ -1,5 +1,4 @@
-
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { Navigate } from 'react-router-dom';
 
 interface ProtectedRouteProps {
@@ -7,7 +6,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading } = useSecureAuth();
 
   if (loading) {
     return (

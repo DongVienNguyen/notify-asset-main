@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useToast } from '@/hooks/use-toast';
 import { FormData } from '@/types/assetSubmission';
 import { validateAssetSubmission } from '@/utils/assetSubmissionValidation';
@@ -9,7 +8,7 @@ import { submitAssetTransactions } from '@/services/assetSubmissionService';
 import { performEmailTest } from '@/services/emailTestService';
 
 export const useAssetSubmission = () => {
-  const { user } = useAuth();
+  const { user } = useSecureAuth();
   const { toast } = useToast();
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);

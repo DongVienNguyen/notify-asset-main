@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { calculateDefaultValues } from '@/utils/defaultValues';
 import { validateAllAssets } from '@/utils/assetValidation';
 
@@ -13,7 +12,7 @@ interface FormData {
 }
 
 export const useAssetEntryForm = () => {
-  const { user } = useAuth();
+  const { user } = useSecureAuth();
   const [formData, setFormData] = useState<FormData>({
     transaction_date: '',
     parts_day: '',

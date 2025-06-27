@@ -1,11 +1,10 @@
-
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useAssetEntryForm } from '@/hooks/useAssetEntryForm';
 import { useTimeRestriction } from '@/hooks/useTimeRestriction';
 import { useAssetSubmission } from '@/hooks/useAssetSubmission';
 
 export const useAssetEntry = () => {
-  const { user } = useAuth();
+  const { user } = useSecureAuth();
   const { isRestrictedTime } = useTimeRestriction();
   const {
     formData,

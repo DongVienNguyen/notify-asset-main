@@ -2,15 +2,11 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { AuthContextType, Staff, LoginResult } from '@/types/auth';
 import { getStoredUser, storeUser, removeStoredUser } from '@/utils/authUtils';
 import { 
-  secureGetStaffByUsername, 
-  secureValidatePassword, 
-  secureHandleFailedLogin, 
-  secureResetFailedLoginAttempts 
+  secureLoginUser // Import the new login function
 } from '@/services/secureAuthService';
 import { setCurrentUserContext } from '@/utils/otherAssetUtils';
 import { validateInput } from '@/utils/inputValidation';
 import { logSecurityEvent } from '@/utils/secureAuthUtils';
-import { supabase } from '@/integrations/supabase/client';
 
 const SecureAuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -21,13 +17,10 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const storedUser = getStoredUser();
     if (storedUser) {
-      // Validate stored user data
       if (storedUser.username && storedUser.role) {
         setUser(storedUser);
-        // Set user context for database operations
         setCurrentUserContext(storedUser);
       } else {
-        // Invalid stored data, remove it
         removeStoredUser();
         logSecurityEvent('INVALID_STORED_USER_DATA');
       }
@@ -36,7 +29,7 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const login = async (username: string, password: string): Promise<LoginResult> => {
-    // Input validation
+    // Client-side input validation (basic)
     const usernameValidation = validateInput.validateText(username, 30);
     if (!usernameValidation.isValid) {
       return { error: usernameValidation.error || 'Tên đăng nhập không hợp lệ' };
@@ -48,49 +41,23 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const normalizedUsername = validateInput.sanitizeString(username.toLowerCase().trim());
-      
-      const { staff, error: fetchError } = await secureGetStaffByUsername(normalizedUsername);
+      // Call the secure login function which uses the Edge Function
+      const { user: loggedInUser, error: loginError } = await secureLoginUser(username, password);
 
-      if (fetchError) {
-        return { error: fetchError };
+      if (loginError) {
+        return { error: loginError };
       }
 
-      if (!staff) {
-        logSecurityEvent('LOGIN_USER_NOT_FOUND', { username: normalizedUsername });
-        return { error: 'Tên đăng nhập hoặc mật khẩu không đúng' };
+      if (loggedInUser) {
+        // Login successful
+        await setCurrentUserContext(loggedInUser); // Set user context for RLS
+        setUser(loggedInUser);
+        storeUser(loggedInUser);
+        return { error: null };
+      } else {
+        // This case should ideally not be reached if loginError is null
+        return { error: 'Đăng nhập thất bại không xác định' };
       }
-
-      if (staff.account_status === 'locked') {
-        logSecurityEvent('LOGIN_LOCKED_ACCOUNT', { username: normalizedUsername });
-        return { error: 'Tài khoản đã bị khóa' };
-      }
-
-      // Get full staff data for password validation
-      const { data: fullStaff } = await supabase
-        .from('staff')
-        .select('password, failed_login_attempts')
-        .ilike('username', normalizedUsername)
-        .single();
-
-      if (!fullStaff) {
-        return { error: 'Lỗi hệ thống' };
-      }
-
-      const isPasswordValid = await secureValidatePassword(password, fullStaff.password);
-
-      if (!isPasswordValid) {
-        return await secureHandleFailedLogin(staff.username, fullStaff.failed_login_attempts || 0);
-      }
-
-      // Login successful
-      await secureResetFailedLoginAttempts(staff.username);
-      await setCurrentUserContext(staff);
-
-      setUser(staff);
-      storeUser(staff);
-      
-      return { error: null };
     } catch (error) {
       logSecurityEvent('LOGIN_EXCEPTION', { error: (error as Error).message });
       return { error: 'Đã xảy ra lỗi trong quá trình đăng nhập' };

@@ -1,112 +1,52 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Staff, LoginResult } from '@/types/auth';
-import bcrypt from 'bcryptjs';
 import { validateInput } from '@/utils/inputValidation';
 import { sanitizeUserForClient, checkRateLimit, logSecurityEvent } from '@/utils/secureAuthUtils';
 
-export const secureGetStaffByUsername = async (username: string) => {
-  // Input validation
+// This function will now call the Edge Function for login
+export const secureLoginUser = async (username: string, password: string): Promise<{ user: Staff | null; error: string | null }> => {
+  // Input validation (client-side pre-check)
   if (!validateInput.isValidUsername(username)) {
     logSecurityEvent('INVALID_USERNAME_ATTEMPT', { username: username.slice(0, 10) });
-    return { staff: null, error: 'Tên đăng nhập không hợp lệ' };
+    return { user: null, error: 'Tên đăng nhập không hợp lệ' };
   }
 
-  // Rate limiting
+  // Rate limiting (client-side pre-check, actual rate limiting will be on Edge Function too)
   if (!checkRateLimit(`auth_${username}`, 5, 15 * 60 * 1000)) {
     logSecurityEvent('RATE_LIMIT_EXCEEDED', { username });
-    return { staff: null, error: 'Quá nhiều lần thử. Vui lòng thử lại sau 15 phút' };
+    return { user: null, error: 'Quá nhiều lần thử. Vui lòng thử lại sau 15 phút' };
   }
 
   try {
-    const { data: staff, error: fetchError } = await supabase
-      .from('staff')
-      .select('*')
-      .ilike('username', username.toLowerCase().trim())
-      .maybeSingle();
-
-    if (fetchError) {
-      logSecurityEvent('DATABASE_ERROR', { error: fetchError.message });
-      return { staff: null, error: 'Lỗi hệ thống' };
-    }
-
-    return { staff: sanitizeUserForClient(staff), error: null };
-  } catch (error) {
-    logSecurityEvent('UNEXPECTED_ERROR', { error: (error as Error).message });
-    return { staff: null, error: 'Lỗi hệ thống' };
-  }
-};
-
-export const secureValidatePassword = async (password: string, storedPassword: string): Promise<boolean> => {
-  if (!password || !storedPassword) {
-    return false;
-  }
-
-  try {
-    return await bcrypt.compare(password, storedPassword);
-  } catch (error) {
-    logSecurityEvent('PASSWORD_VALIDATION_ERROR', { error: (error as Error).message });
-    return false;
-  }
-};
-
-export const secureHandleFailedLogin = async (username: string, currentAttempts: number = 0): Promise<LoginResult> => {
-  const newAttempts = currentAttempts + 1;
-  
-  logSecurityEvent('FAILED_LOGIN_ATTEMPT', { username, attemptCount: newAttempts });
-  
-  if (newAttempts >= 3) {
-    try {
-      const { error } = await supabase
-        .from('staff')
-        .update({
-          account_status: 'locked',
-          failed_login_attempts: newAttempts,
-          last_failed_login: new Date().toISOString(),
-          locked_at: new Date().toISOString()
-        })
-        .ilike('username', username);
-      
-      if (error) {
-        logSecurityEvent('ACCOUNT_LOCK_ERROR', { username, error: error.message });
-      } else {
-        logSecurityEvent('ACCOUNT_LOCKED', { username });
-      }
-    } catch (error) {
-      logSecurityEvent('ACCOUNT_LOCK_EXCEPTION', { username, error: (error as Error).message });
-    }
+    const normalizedUsername = validateInput.sanitizeString(username.toLowerCase().trim());
     
-    return { error: 'Tài khoản đã bị khóa do nhập sai mật khẩu quá nhiều lần' };
-  } else {
-    try {
-      await supabase
-        .from('staff')
-        .update({
-          failed_login_attempts: newAttempts,
-          last_failed_login: new Date().toISOString()
-        })
-        .ilike('username', username);
-    } catch (error) {
-      logSecurityEvent('FAILED_ATTEMPT_UPDATE_ERROR', { username, error: (error as Error).message });
+    // Call the login-user Edge Function
+    const { data, error: invokeError } = await supabase.functions.invoke('login-user', {
+      body: { username: normalizedUsername, password: password }
+    });
+
+    if (invokeError) {
+      logSecurityEvent('EDGE_FUNCTION_INVOKE_ERROR', { error: invokeError.message });
+      return { user: null, error: 'Lỗi kết nối máy chủ' };
     }
-    
-    const remainingAttempts = 3 - newAttempts;
-    return { error: `Mật khẩu không đúng. Còn ${remainingAttempts} lần thử...` };
+
+    if (data && data.success) {
+      logSecurityEvent('LOGIN_SUCCESS', { username: normalizedUsername });
+      return { user: sanitizeUserForClient(data.user), error: null };
+    } else {
+      logSecurityEvent('LOGIN_FAILED_EDGE_FUNCTION', { username: normalizedUsername, error: data?.error });
+      return { user: null, error: data?.error || 'Đăng nhập thất bại' };
+    }
+  } catch (error) {
+    logSecurityEvent('LOGIN_EDGE_FUNCTION_EXCEPTION', { error: (error as Error).message });
+    return { user: null, error: 'Đã xảy ra lỗi trong quá trình đăng nhập' };
   }
 };
 
-export const secureResetFailedLoginAttempts = async (username: string): Promise<void> => {
-  try {
-    await supabase
-      .from('staff')
-      .update({
-        failed_login_attempts: 0,
-        last_failed_login: null
-      })
-      .ilike('username', username);
-      
-    logSecurityEvent('LOGIN_SUCCESS', { username });
-  } catch (error) {
-    logSecurityEvent('RESET_ATTEMPTS_ERROR', { username, error: (error as Error).message });
-  }
-};
+// These functions are no longer needed on the client-side as their logic is in the Edge Function
+// export const secureValidatePassword = async (password: string, storedPassword: string): Promise<boolean> => { /* ... */ };
+// export const secureHandleFailedLogin = async (username: string, currentAttempts: number = 0): Promise<LoginResult> => { /* ... */ };
+// export const secureResetFailedLoginAttempts = async (username: string): Promise<void> => { /* ... */ };
+
+// Keep sanitizeUserForClient if it's used elsewhere for client-side data
+export { sanitizeUserForClient } from '@/utils/secureAuthUtils';

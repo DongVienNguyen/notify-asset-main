@@ -1,10 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { Archive, History } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useNavigate } from 'react-router-dom';
 import { AssetHistoryManager } from '@/components/AssetHistoryManager';
 import { useOtherAssets } from '@/hooks/useOtherAssets';
@@ -13,7 +12,7 @@ import OtherAssetSearchBar from '@/components/OtherAssetSearchBar';
 import OtherAssetTable from '@/components/OtherAssetTable';
 
 const OtherAssets = () => {
-  const { user } = useAuth();
+  const { user } = useSecureAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   

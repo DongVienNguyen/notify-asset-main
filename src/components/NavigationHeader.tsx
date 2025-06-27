@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Package, Menu, Bell, User, LogOut, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,11 +19,11 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { NotificationBell } from './NotificationBell';
 
 export function NavigationHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout } = useSecureAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

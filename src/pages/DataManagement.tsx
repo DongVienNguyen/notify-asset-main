@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Settings, Plus, Download, Upload, Trash2, Edit, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
@@ -45,7 +44,7 @@ const DataManagement = () => {
   const [statistics, setStatistics] = useState<any[]>([]);
   const [isBackingUp, setIsBackingUp] = useState(false);
 
-  const { user } = useAuth();
+  const { user } = useSecureAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 

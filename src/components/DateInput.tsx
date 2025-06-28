@@ -20,9 +20,13 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, cla
   const selectedDate = value ? (isValid(parseISO(value)) ? parseISO(value) : undefined) : undefined;
 
   const handleDateSelect = (date: Date | undefined) => {
-    // Convert selected Date object (local time) back to YYYY-MM-DD string
-    onChange(date ? format(date, 'yyyy-MM-dd') : '');
-    setOpen(false); // Close popover on select
+    // Only update if a date is actually selected (not deselected by clicking the same date)
+    if (date) {
+      onChange(format(date, 'yyyy-MM-dd'));
+    }
+    // If date is undefined (meaning the user clicked the already selected date to deselect it),
+    // we do nothing, keeping the current value.
+    setOpen(false); // Always close popover on select/deselect attempt
   };
 
   return (

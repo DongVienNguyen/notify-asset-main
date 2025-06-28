@@ -1,19 +1,15 @@
 import { useState } from 'react';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
-import { useToast } from '@/hooks/use-toast';
 import { FormData } from '@/types/assetSubmission';
 import { validateAssetSubmission } from '@/utils/assetSubmissionValidation';
-import { createToastUtils } from '@/utils/toastUtils';
 import { submitAssetTransactions } from '@/services/assetSubmissionService';
 import { performEmailTest } from '@/services/emailTestService';
+import { toast } from 'sonner'; // Import toast directly from sonner
 
 export const useAssetSubmission = () => {
   const { user } = useSecureAuth();
-  const { toast } = useToast();
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);
-
-  const showToast = createToastUtils(toast);
 
   const handleSubmit = async (
     formData: FormData,
@@ -28,10 +24,9 @@ export const useAssetSubmission = () => {
     
     if (isRestrictedTime) {
       console.log('❌ Submission blocked - restricted time');
-      showToast(
+      toast.error( // Changed from showToast
         "Không thể gửi",
-        'Không thể gửi trong khung giờ 7:45-8:05 và 12:45-13:05',
-        "destructive"
+        { description: 'Không thể gửi trong khung giờ 7:45-8:05 và 12:45-13:05' }
       );
       return;
     }
@@ -57,16 +52,15 @@ export const useAssetSubmission = () => {
       
       if (emailResult.success) {
         console.log('✅ Email sent successfully');
-        showToast(
+        toast.success( // Changed from showToast
           "Thành công!",
-          `Đã gửi thành công ${multipleAssets.length} thông báo tài sản và email xác nhận`
+          { description: `Đã gửi thành công ${multipleAssets.length} thông báo tài sản và email xác nhận` }
         );
       } else {
         console.log('⚠️ Email failed but database save successful');
-        showToast(
+        toast.error( // Changed from showToast
           "Lưu thành công nhưng gửi email thất bại",
-          `Đã lưu ${multipleAssets.length} thông báo tài sản nhưng không gửi được email: ${emailResult.error}`,
-          "destructive"
+          { description: `Đã lưu ${multipleAssets.length} thông báo tài sản nhưng không gửi được email: ${emailResult.error}` }
         );
       }
       
@@ -78,16 +72,14 @@ export const useAssetSubmission = () => {
       setMessage({ type: 'error', text: errorMessage });
       
       if (error instanceof Error && error.message.includes('email')) {
-        showToast(
+        toast.error( // Changed from showToast
           "Lưu thành công nhưng gửi email thất bại",
-          `Đã lưu ${multipleAssets.length} thông báo tài sản nhưng có lỗi khi gửi email`,
-          "destructive"
+          { description: `Đã lưu ${multipleAssets.length} thông báo tài sản nhưng có lỗi khi gửi email` }
         );
       } else {
-        showToast(
+        toast.error( // Changed from showToast
           "Lỗi gửi thông báo",
-          errorMessage,
-          "destructive"
+          { description: errorMessage }
         );
       }
     } finally {
@@ -98,10 +90,9 @@ export const useAssetSubmission = () => {
 
   const handleTestEmail = async () => {
     if (!user?.username) {
-      showToast(
+      toast.error( // Changed from showToast
         "Lỗi", 
-        "Không tìm thấy thông tin người dùng", 
-        'destructive'
+        { description: "Không tìm thấy thông tin người dùng" }
       );
       return;
     }
@@ -112,25 +103,23 @@ export const useAssetSubmission = () => {
       
       if (result.success) {
         console.log('✅ Email sent successfully, showing success toast');
-        showToast(
+        toast.success( // Changed from showToast
           "Email test thành công!", 
-          "Kiểm tra hộp thư của bạn"
+          { description: "Kiểm tra hộp thư của bạn" }
         );
       } else {
         console.log('❌ Email failed, showing error toast');
-        showToast(
+        toast.error( // Changed from showToast
           "Email test thất bại", 
-          result.error || 'Lỗi không xác định', 
-          'destructive'
+          { description: result.error || 'Lỗi không xác định' }
         );
       }
     } catch (error) {
       console.error('❌ Exception in handleTestEmail:', error);
       const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra khi test email";
-      showToast(
+      toast.error( // Changed from showToast
         "Lỗi test email", 
-        errorMessage, 
-        'destructive'
+        { description: errorMessage }
       );
     } finally {
       setIsLoading(false);
@@ -142,6 +131,5 @@ export const useAssetSubmission = () => {
     isLoading,
     handleSubmit,
     handleTestEmail,
-    showToast
   };
 };

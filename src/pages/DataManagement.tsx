@@ -39,6 +39,7 @@ const DataManagement = () => {
       name: 'Nhân viên',
       fields: [
         { key: 'username', label: 'Tên đăng nhập', type: 'text', required: true },
+        { key: 'password', label: 'Mật khẩu', type: 'text' },
         { key: 'staff_name', label: 'Tên nhân viên', type: 'text' },
         { key: 'role', label: 'Vai trò', type: 'select', options: ['admin', 'user'], required: true },
         { key: 'department', label: 'Phòng ban', type: 'text' },
@@ -248,13 +249,6 @@ const DataManagement = () => {
     }
   }, [selectedEntity, isUserContextSet]);
 
-  useEffect(() => {
-    if (isUserContextSet) {
-      loadStatistics();
-      loadStaffTransactionStats();
-    }
-  }, [isUserContextSet]);
-
   const loadData = async () => {
     if (!selectedEntity) return;
     setIsLoading(true);
@@ -347,6 +341,9 @@ const DataManagement = () => {
         initialFormData[field.key] = '';
       }
     });
+    if (selectedEntity === 'staff') {
+      initialFormData.password = '123456';
+    }
     setFormData(initialFormData);
     setDialogOpen(true);
   };
@@ -389,6 +386,10 @@ const DataManagement = () => {
           delete submitData[key];
         }
       });
+
+      if (config.entity === 'staff' && !editingItem && !submitData.password) {
+        submitData.password = '123456';
+      }
 
       if (editingItem) {
         delete submitData.id;
@@ -570,7 +571,7 @@ const DataManagement = () => {
   };
 
   const handleTabChange = (value: string) => {
-    if (value === 'statistics' && isUserContextSet) {
+    if (value === 'statistics') {
       loadStatistics();
       loadStaffTransactionStats();
     }
@@ -712,7 +713,9 @@ const DataManagement = () => {
                                       ? new Date(item[field.key]).toLocaleDateString('vi-VN')
                                       : field.type === 'boolean' && item[field.key] !== undefined
                                         ? (item[field.key] ? 'Có' : 'Không')
-                                        : item[field.key]?.toString()}
+                                        : (selectedEntity === 'staff' && field.key === 'password')
+                                          ? '********'
+                                          : item[field.key]?.toString()}
                                   </TableCell>
                                 ))}
                                 <TableCell className="text-right py-2 px-4">
@@ -873,10 +876,11 @@ const DataManagement = () => {
                     ) : (
                       <Input
                         id={field.key}
-                        type={field.type}
+                        type={selectedEntity === 'staff' && field.key === 'password' ? 'password' : field.type}
                         value={formData[field.key] || ''}
                         onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                         className="col-span-3"
+                        placeholder={selectedEntity === 'staff' && field.key === 'password' && editingItem ? 'Để trống nếu không muốn thay đổi' : ''}
                       />
                     )}
                   </div>

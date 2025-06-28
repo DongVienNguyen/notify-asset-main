@@ -13,6 +13,7 @@ import SentAssetReminderTable from '@/components/SentAssetReminderTable';
 import { useAssetReminderData } from '@/hooks/useAssetReminderData';
 import { useAssetReminderOperations } from '@/hooks/useAssetReminderOperations';
 import { useAssetReminderEmail } from '@/hooks/useAssetReminderEmail';
+import { sendPushNotification } from '@/services/notificationService';
 
 interface AssetReminder {
   id: string;
@@ -69,8 +70,19 @@ const AssetReminders = () => {
       const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
       const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
       const message = `Tài sản "${reminder.ten_ts}" đã đến hạn.`;
-      if (cbkhUser) createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
-      if (cbqlnUser) createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+      const payload = {
+          title: 'Nhắc nhở tài sản đến hạn',
+          body: message,
+          url: '/asset-reminders'
+      };
+      if (cbkhUser) {
+        createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
+        sendPushNotification(cbkhUser.email, payload);
+      }
+      if (cbqlnUser) {
+        createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+        sendPushNotification(cbqlnUser.email, payload);
+      }
     }
   };
 
@@ -82,8 +94,19 @@ const AssetReminders = () => {
         const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
         const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
         const message = `Tài sản "${reminder.ten_ts}" đã đến hạn.`;
-        if (cbkhUser) createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
-        if (cbqlnUser) createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+        const payload = {
+            title: 'Nhắc nhở tài sản đến hạn',
+            body: message,
+            url: '/asset-reminders'
+        };
+        if (cbkhUser) {
+            createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
+            sendPushNotification(cbkhUser.email, payload);
+        }
+        if (cbqlnUser) {
+            createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+            sendPushNotification(cbqlnUser.email, payload);
+        }
       }
     }
   };

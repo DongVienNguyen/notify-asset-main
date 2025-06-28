@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Menu, Bell, User, LogOut, Key } from 'lucide-react';
+import { Package, Menu, Bell, User, LogOut, Key, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { NotificationBell } from './NotificationBell';
+import { requestNotificationPermission, subscribeUserToPush } from '@/utils/pushNotificationUtils';
 
 export function NavigationHeader() {
   const { user, logout } = useSecureAuth();
@@ -29,6 +30,17 @@ export function NavigationHeader() {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleEnableNotifications = async () => {
+    if (!user) return;
+    const permission = await requestNotificationPermission();
+    if (permission === 'granted') {
+      await subscribeUserToPush(user.username);
+      alert('Đã bật thông báo đẩy thành công! Bạn sẽ nhận được thông báo ngay cả khi đã đóng ứng dụng.');
+    } else {
+      alert('Bạn đã không cấp quyền nhận thông báo. Tính năng sẽ không hoạt động.');
+    }
   };
 
   const menuItems = [
@@ -168,6 +180,11 @@ export function NavigationHeader() {
                     </p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleEnableNotifications}>
+                  <Smartphone className="mr-2 h-4 w-4" />
+                  <span>Bật thông báo đẩy</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/reset-password" className="flex items-center">

@@ -24,10 +24,10 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, payload } = await req.json();
+    const { username, payload } = await req.json();
 
-    if (!user_id || !payload) {
-      return new Response(JSON.stringify({ error: 'user_id and payload are required' }), {
+    if (!username || !payload) {
+      return new Response(JSON.stringify({ error: 'username and payload are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
@@ -49,7 +49,7 @@ serve(async (req) => {
     const { data: subscriptions, error } = await supabaseAdmin
       .from('push_subscriptions')
       .select('subscription')
-      .eq('user_id', user_id);
+      .eq('username', username);
 
     if (error) {
       throw error;

@@ -14,6 +14,7 @@ import ComboBox from '@/components/ComboBox';
 import CRCReminderTable from '@/components/CRCReminderTable';
 import SentCRCReminderTable from '@/components/SentCRCReminderTable';
 import { isDayMonthDueOrOverdue } from '@/utils/dateUtils';
+import { sendPushNotification } from '@/services/notificationService';
 
 const CRCReminders = () => {
   const {
@@ -180,8 +181,14 @@ const CRCReminders = () => {
         await supabase.from('crc_reminders').delete().eq('id', reminder.id);
         
         const notifMessage = `Yêu cầu duyệt CRC loại "${reminder.loai_bt_crc}" cần thực hiện vào ngày ${reminder.ngay_thuc_hien}.`;
+        const pushPayload = {
+            title: 'Nhắc nhở duyệt CRC',
+            body: notifMessage,
+            url: '/crc-reminders'
+        };
         for (const recipient of recipientsInfo) {
           createNotification(recipient.email, 'Nhắc nhở duyệt CRC', notifMessage);
+          sendPushNotification(recipient.email, pushPayload);
         }
 
         setMessage({ type: 'success', text: "Đã gửi email và chuyển sang danh sách đã gửi" });

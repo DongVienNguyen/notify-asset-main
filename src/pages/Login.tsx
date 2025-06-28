@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoginHeader } from '@/components/LoginHeader';
 import { LoginForm } from '@/components/LoginForm';
 import { AccountLockedMessage } from '@/components/AccountLockedMessage';
-import { DemoCredentials } from '@/components/DemoCredentials';
+// import { DemoCredentials } from '@/components/DemoCredentials'; // Removed import
 import { useDebounce } from '@/hooks/useDebounce';
 import { checkAccountStatus } from '@/services/secureAuthService';
 
@@ -131,7 +131,7 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        <DemoCredentials />
+        {/* <DemoCredentials /> Removed this line */}
       </div>
     </div>
   );

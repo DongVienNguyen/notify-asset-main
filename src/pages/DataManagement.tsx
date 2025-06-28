@@ -211,8 +211,8 @@ const DataManagement = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
-  const [isBackingUp, setIsBackingUp] = useState(false); // New state for backup loading
-  const [isUserContextSet, setIsUserContextSet] = useState(false); // New state to track user context setup
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isUserContextSet, setIsUserContextSet] = useState(false);
 
   const { user } = useSecureAuth();
   const navigate = useNavigate();
@@ -230,23 +230,23 @@ const DataManagement = () => {
       if (user && user.username) {
         try {
           await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
-          setIsUserContextSet(true); // Mark as set
+          setIsUserContextSet(true);
         } catch (error) {
           setMessage({ type: 'error', text: "Không thể thiết lập context người dùng" });
-          setIsUserContextSet(false); // Mark as failed
+          setIsUserContextSet(false);
         }
       } else {
-        setIsUserContextSet(false); // User not available yet
+        setIsUserContextSet(false);
       }
     };
     setupUserContext();
   }, [user, navigate]);
 
   useEffect(() => {
-    if (selectedEntity && entityConfig[selectedEntity] && isUserContextSet) { // Only load data if context is set
+    if (selectedEntity && entityConfig[selectedEntity] && isUserContextSet) {
       loadData();
     }
-  }, [selectedEntity, isUserContextSet]); // Add isUserContextSet as a dependency
+  }, [selectedEntity, isUserContextSet]);
 
   useEffect(() => {
     if (isUserContextSet) {
@@ -374,14 +374,24 @@ const DataManagement = () => {
           return;
         }
       }
-      const submitData = { ...formData };
+      
+      const submitData: { [key: string]: any } = { ...formData };
+
       config.fields.filter(f => f.type === 'boolean').forEach(field => {
-        if (submitData[field.key] !== undefined) {
+        if (submitData[field.key] !== undefined && submitData[field.key] !== null) {
           submitData[field.key] = submitData[field.key] === 'true';
         }
       });
 
+      // Remove empty string values to allow DB defaults to apply
+      Object.keys(submitData).forEach(key => {
+        if (submitData[key] === '') {
+          delete submitData[key];
+        }
+      });
+
       if (editingItem) {
+        delete submitData.id;
         const { error } = await supabase.from(config.entity as any).update(submitData).eq('id', editingItem.id);
         if (error) throw error;
         setMessage({ type: 'success', text: "Cập nhật thành công" });
@@ -392,6 +402,7 @@ const DataManagement = () => {
       }
       setDialogOpen(false);
       loadData();
+      loadStatistics();
     } catch (error: any) {
       setMessage({ type: 'error', text: `Không thể lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
     }
@@ -433,7 +444,6 @@ const DataManagement = () => {
       return;
     }
     const config = entityConfig[selectedEntity];
-    // Use the new toCSV utility, passing the data and field configurations
     const csvContent = toCSV(filteredData, config.fields);
     
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -450,14 +460,19 @@ const DataManagement = () => {
     setIsBackingUp(true);
     setMessage({ type: '', text: '' });
     try {
+      if (user && user.username) {
+        await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
+      } else {
+        throw new Error("User not available for setting context.");
+      }
+
       const zip = new JSZip();
       for (const key in entityConfig) {
         const config = entityConfig[key];
         const { data: tableData, error } = await supabase.from(config.entity as any).select('*');
         if (error) throw error;
-        // Convert data to CSV using the new utility
         const csvContent = toCSV(tableData || [], config.fields);
-        zip.file(`${key}.csv`, csvContent); // Save as .csv
+        zip.file(`${key}.csv`, csvContent);
       }
       const content = await zip.generateAsync({ type: "blob" });
       const link = document.createElement('a');
@@ -495,18 +510,15 @@ const DataManagement = () => {
       const zip = await JSZip.loadAsync(restoreFile);
       for (const key in entityConfig) {
         const config = entityConfig[key];
-        const fileName = `${key}.csv`; // Expect .csv files
+        const fileName = `${key}.csv`;
         const file = zip.file(fileName);
         if (file) {
           const content = await file.async("text");
-          // Parse CSV content using the new utility
           const dataToRestore = fromCSV(content, config.fields);
           
-          // Delete existing data
           const { error: deleteError } = await supabase.from(config.entity as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
           if (deleteError) throw deleteError;
 
-          // Insert new data
           if (dataToRestore.length > 0) {
             const { error: insertError } = await supabase.from(config.entity as any).insert(dataToRestore);
             if (insertError) throw insertError;
@@ -557,6 +569,13 @@ const DataManagement = () => {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    if (value === 'statistics' && isUserContextSet) {
+      loadStatistics();
+      loadStaffTransactionStats();
+    }
+  };
+
   if (!user || user.role !== 'admin') return <Layout><div>Đang kiểm tra quyền truy cập...</div></Layout>;
 
   return (
@@ -579,7 +598,7 @@ const DataManagement = () => {
           </Alert>
         )}
 
-        <Tabs defaultValue="management" className="w-full">
+        <Tabs defaultValue="management" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="border-b">
             <TabsTrigger value="management"><DatabaseIcon className="mr-2 h-4 w-4" />Quản lý dữ liệu</TabsTrigger>
             <TabsTrigger value="statistics"><BarChart2 className="mr-2 h-4 w-4" />Thống kê</TabsTrigger>

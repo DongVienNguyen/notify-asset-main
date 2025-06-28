@@ -213,68 +213,64 @@ const DataManagement = () => {
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [isBackingUp, setIsBackingUp] = useState(false);
-  const [isUserContextSet, setIsUserContextSet] = useState(false);
 
   const { user } = useSecureAuth();
   const navigate = useNavigate();
 
   const ITEMS_PER_PAGE = 20;
 
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      setMessage({ type: 'error', text: "Chỉ admin mới có thể truy cập module này" });
-      navigate('/');
+  const runAsAdmin = async (callback: () => Promise<void>) => {
+    if (!user || user.role !== 'admin' || !user.username) {
+      setMessage({ type: 'error', text: "Hành động yêu cầu quyền admin." });
       return;
     }
-
-    const setupUserContext = async () => {
-      if (user && user.username) {
-        try {
-          await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
-          setIsUserContextSet(true);
-        } catch (error) {
-          setMessage({ type: 'error', text: "Không thể thiết lập context người dùng" });
-          setIsUserContextSet(false);
-        }
-      } else {
-        setIsUserContextSet(false);
-      }
-    };
-    setupUserContext();
-  }, [user, navigate]);
-
-  useEffect(() => {
-    if (selectedEntity && entityConfig[selectedEntity] && isUserContextSet) {
-      loadData();
+    try {
+      await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
+      await callback();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Lỗi thực thi tác vụ admin: ${error.message}` });
     }
-  }, [selectedEntity, isUserContextSet]);
+  };
 
   const loadData = async () => {
     if (!selectedEntity) return;
     setIsLoading(true);
-    try {
-      const config = entityConfig[selectedEntity];
-      const hasCreatedAt = config.fields.some(f => f.key === 'created_at');
-      
-      let query = supabase.from(config.entity as any).select('*');
-      
-      if (hasCreatedAt) {
-        query = query.order('created_at', { ascending: false });
-      } else {
-        query = query.order('id', { ascending: false });
+    await runAsAdmin(async () => {
+      try {
+        const config = entityConfig[selectedEntity];
+        const hasCreatedAt = config.fields.some(f => f.key === 'created_at');
+        
+        let query = supabase.from(config.entity as any).select('*');
+        
+        if (hasCreatedAt) {
+          query = query.order('created_at', { ascending: false });
+        } else {
+          query = query.order('id', { ascending: false });
+        }
+
+        const { data: result, error } = await query;
+
+        if (error) throw error;
+        setData(result || []);
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể tải dữ liệu: ${error.message || 'Lỗi không xác định'}` });
+        setData([]);
       }
-
-      const { data: result, error } = await query;
-
-      if (error) throw error;
-      setData(result || []);
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể tải dữ liệu: ${error.message || 'Lỗi không xác định'}` });
-      setData([]);
-    } finally {
-      setIsLoading(false);
-    }
+    });
+    setIsLoading(false);
   };
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    } else if (user === null) {
+      // Handle case where user is explicitly logged out
+      const authUser = getStoredUser();
+      if (!authUser) {
+        navigate('/login');
+      }
+    }
+  }, [user, selectedEntity, navigate]);
 
   const loadStatistics = async () => {
     try {
@@ -356,6 +352,10 @@ const DataManagement = () => {
         formattedItem[field.key] = formattedItem[field.key] ? 'true' : 'false';
       }
     });
+    // Don't load the hashed password into the form
+    if (selectedEntity === 'staff') {
+      formattedItem.password = '';
+    }
     setFormData(formattedItem);
     setDialogOpen(true);
   };
@@ -363,50 +363,62 @@ const DataManagement = () => {
   const handleSave = async () => {
     if (!selectedEntity) return;
     setMessage({ type: '', text: '' });
-    try {
-      const config = entityConfig[selectedEntity];
-      for (const field of config.fields.filter(f => f.required)) {
-        if (!formData[field.key]) {
-          setMessage({ type: 'error', text: `Vui lòng điền ${field.label}` });
-          return;
+    await runAsAdmin(async () => {
+      try {
+        const config = entityConfig[selectedEntity];
+        for (const field of config.fields.filter(f => f.required)) {
+          if (!formData[field.key]) {
+            setMessage({ type: 'error', text: `Vui lòng điền ${field.label}` });
+            return;
+          }
         }
-      }
-      
-      const submitData: { [key: string]: any } = { ...formData };
+        
+        const submitData: { [key: string]: any } = { ...formData };
 
-      config.fields.filter(f => f.type === 'boolean').forEach(field => {
-        if (submitData[field.key] !== undefined && submitData[field.key] !== null) {
-          submitData[field.key] = submitData[field.key] === 'true';
+        config.fields.filter(f => f.type === 'boolean').forEach(field => {
+          if (submitData[field.key] !== undefined && submitData[field.key] !== null) {
+            submitData[field.key] = submitData[field.key] === 'true';
+          }
+        });
+
+        // Clean data: remove empty strings, but handle password separately
+        Object.keys(submitData).forEach(key => {
+            if (key !== 'password' && (submitData[key] === '' || submitData[key] === null)) {
+                delete submitData[key];
+            }
+        });
+
+        if (selectedEntity === 'staff') {
+            if (editingItem) {
+                // For editing, if password is empty string, don't update it.
+                if (submitData.password === '') {
+                    delete submitData.password;
+                }
+            } else {
+                // For creating, if password is empty or not provided, use default.
+                if (!submitData.password) {
+                    submitData.password = '123456';
+                }
+            }
         }
-      });
 
-      // Remove empty string values to allow DB defaults to apply
-      Object.keys(submitData).forEach(key => {
-        if (submitData[key] === '') {
-          delete submitData[key];
+        if (editingItem) {
+          delete submitData.id;
+          const { error } = await supabase.from(config.entity as any).update(submitData).eq('id', editingItem.id);
+          if (error) throw error;
+          setMessage({ type: 'success', text: "Cập nhật thành công" });
+        } else {
+          const { error } = await supabase.from(config.entity as any).insert([submitData]);
+          if (error) throw error;
+          setMessage({ type: 'success', text: "Thêm mới thành công" });
         }
-      });
-
-      if (config.entity === 'staff' && !editingItem && !submitData.password) {
-        submitData.password = '123456';
+        setDialogOpen(false);
+        loadData();
+        loadStatistics();
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
       }
-
-      if (editingItem) {
-        delete submitData.id;
-        const { error } = await supabase.from(config.entity as any).update(submitData).eq('id', editingItem.id);
-        if (error) throw error;
-        setMessage({ type: 'success', text: "Cập nhật thành công" });
-      } else {
-        const { error } = await supabase.from(config.entity as any).insert([submitData]);
-        if (error) throw error;
-        setMessage({ type: 'success', text: "Thêm mới thành công" });
-      }
-      setDialogOpen(false);
-      loadData();
-      loadStatistics();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
-    }
+    });
   };
 
   const handleDelete = async (item: any) => {
@@ -415,28 +427,32 @@ const DataManagement = () => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa bản ghi này khỏi bảng ${entityConfig[selectedEntity].name}?`)) {
       return;
     }
-    try {
-      const config = entityConfig[selectedEntity];
-      const { error } = await supabase.from(config.entity as any).delete().eq('id', item.id);
-      if (error) throw error;
-      setMessage({ type: 'success', text: "Xóa thành công" });
-      loadData();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể xóa dữ liệu: ${error.message || 'Lỗi không xác định'}` });
-    }
+    await runAsAdmin(async () => {
+      try {
+        const config = entityConfig[selectedEntity];
+        const { error } = await supabase.from(config.entity as any).delete().eq('id', item.id);
+        if (error) throw error;
+        setMessage({ type: 'success', text: "Xóa thành công" });
+        loadData();
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể xóa dữ liệu: ${error.message || 'Lỗi không xác định'}` });
+      }
+    });
   };
 
   const toggleStaffLock = async (staff: any) => {
     setMessage({ type: '', text: '' });
-    try {
-      const newStatus = staff.account_status === 'active' ? 'locked' : 'active';
-      const { error } = await supabase.from('staff').update({ account_status: newStatus, failed_login_attempts: 0, locked_at: newStatus === 'locked' ? new Date().toISOString() : null }).eq('id', staff.id);
-      if (error) throw error;
-      setMessage({ type: 'success', text: `Đã ${newStatus === 'locked' ? 'khóa' : 'mở khóa'} tài khoản` });
-      loadData();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể thay đổi trạng thái tài khoản: ${error.message || 'Lỗi không xác định'}` });
-    }
+    await runAsAdmin(async () => {
+      try {
+        const newStatus = staff.account_status === 'active' ? 'locked' : 'active';
+        const { error } = await supabase.from('staff').update({ account_status: newStatus, failed_login_attempts: 0, locked_at: newStatus === 'locked' ? new Date().toISOString() : null }).eq('id', staff.id);
+        if (error) throw error;
+        setMessage({ type: 'success', text: `Đã ${newStatus === 'locked' ? 'khóa' : 'mở khóa'} tài khoản` });
+        loadData();
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể thay đổi trạng thái tài khoản: ${error.message || 'Lỗi không xác định'}` });
+      }
+    });
   };
 
   const exportToCSV = () => {
@@ -460,34 +476,29 @@ const DataManagement = () => {
   const backupAllData = async () => {
     setIsBackingUp(true);
     setMessage({ type: '', text: '' });
-    try {
-      if (user && user.username) {
-        await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
-      } else {
-        throw new Error("User not available for setting context.");
+    await runAsAdmin(async () => {
+      try {
+        const zip = new JSZip();
+        for (const key in entityConfig) {
+          const config = entityConfig[key];
+          const { data: tableData, error } = await supabase.from(config.entity as any).select('*');
+          if (error) throw error;
+          const csvContent = toCSV(tableData || [], config.fields);
+          zip.file(`${key}.csv`, csvContent);
+        }
+        const content = await zip.generateAsync({ type: "blob" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.setAttribute('download', `supabase_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setMessage({ type: 'success', text: "Sao lưu toàn bộ dữ liệu thành công." });
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể sao lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
       }
-
-      const zip = new JSZip();
-      for (const key in entityConfig) {
-        const config = entityConfig[key];
-        const { data: tableData, error } = await supabase.from(config.entity as any).select('*');
-        if (error) throw error;
-        const csvContent = toCSV(tableData || [], config.fields);
-        zip.file(`${key}.csv`, csvContent);
-      }
-      const content = await zip.generateAsync({ type: "blob" });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.setAttribute('download', `supabase_backup_${new Date().toISOString().slice(0, 10)}.zip`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setMessage({ type: 'success', text: "Sao lưu toàn bộ dữ liệu thành công." });
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể sao lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
-    } finally {
-      setIsBackingUp(false);
-    }
+    });
+    setIsBackingUp(false);
   };
 
   const handleRestoreData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -507,34 +518,36 @@ const DataManagement = () => {
       return;
     }
 
-    try {
-      const zip = await JSZip.loadAsync(restoreFile);
-      for (const key in entityConfig) {
-        const config = entityConfig[key];
-        const fileName = `${key}.csv`;
-        const file = zip.file(fileName);
-        if (file) {
-          const content = await file.async("text");
-          const dataToRestore = fromCSV(content, config.fields);
-          
-          const { error: deleteError } = await supabase.from(config.entity as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          if (deleteError) throw deleteError;
+    await runAsAdmin(async () => {
+      try {
+        const zip = await JSZip.loadAsync(restoreFile);
+        for (const key in entityConfig) {
+          const config = entityConfig[key];
+          const fileName = `${key}.csv`;
+          const file = zip.file(fileName);
+          if (file) {
+            const content = await file.async("text");
+            const dataToRestore = fromCSV(content, config.fields);
+            
+            const { error: deleteError } = await supabase.from(config.entity as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            if (deleteError) throw deleteError;
 
-          if (dataToRestore.length > 0) {
-            const { error: insertError } = await supabase.from(config.entity as any).insert(dataToRestore);
-            if (insertError) throw insertError;
+            if (dataToRestore.length > 0) {
+              const { error: insertError } = await supabase.from(config.entity as any).insert(dataToRestore);
+              if (insertError) throw insertError;
+            }
           }
         }
+        setMessage({ type: 'success', text: "Import dữ liệu thành công." });
+        loadData();
+        loadStatistics();
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể import dữ liệu: ${error.message || 'Lỗi không xác định'}` });
+      } finally {
+        setRestoreFile(null);
+        if(restoreInputRef.current) restoreInputRef.current.value = '';
       }
-      setMessage({ type: 'success', text: "Import dữ liệu thành công." });
-      loadData();
-      loadStatistics();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể import dữ liệu: ${error.message || 'Lỗi không xác định'}` });
-    } finally {
-      setRestoreFile(null);
-      if(restoreInputRef.current) restoreInputRef.current.value = '';
-    }
+    });
   };
   
   const handleImportClick = () => {
@@ -554,30 +567,35 @@ const DataManagement = () => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa tất cả giao dịch từ ${startDate} đến ${endDate}? Thao tác này không thể hoàn tác.`)) {
       return;
     }
-    try {
-      const { error } = await supabase
-        .from('asset_transactions')
-        .delete()
-        .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate);
+    await runAsAdmin(async () => {
+      try {
+        const { error } = await supabase
+          .from('asset_transactions')
+          .delete()
+          .gte('transaction_date', startDate)
+          .lte('transaction_date', endDate);
 
-      if (error) throw error;
-      setMessage({ type: 'success', text: `Đã xóa thành công các giao dịch từ ${startDate} đến ${endDate}.` });
-      loadData();
-      loadStatistics();
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Không thể xóa giao dịch hàng loạt: ${error.message || 'Lỗi không xác định'}` });
-    }
+        if (error) throw error;
+        setMessage({ type: 'success', text: `Đã xóa thành công các giao dịch từ ${startDate} đến ${endDate}.` });
+        loadData();
+        loadStatistics();
+      } catch (error: any) {
+        setMessage({ type: 'error', text: `Không thể xóa giao dịch hàng loạt: ${error.message || 'Lỗi không xác định'}` });
+      }
+    });
   };
 
   const handleTabChange = (value: string) => {
     if (value === 'statistics') {
-      loadStatistics();
-      loadStaffTransactionStats();
+      runAsAdmin(async () => {
+        await loadStatistics();
+        await loadStaffTransactionStats();
+      });
     }
   };
 
-  if (!user || user.role !== 'admin') return <Layout><div>Đang kiểm tra quyền truy cập...</div></Layout>;
+  if (!user) return <Layout><div>Đang kiểm tra quyền truy cập...</div></Layout>;
+  if (user.role !== 'admin') return <Layout><div>Chỉ admin mới có thể truy cập module này.</div></Layout>;
 
   return (
     <Layout>

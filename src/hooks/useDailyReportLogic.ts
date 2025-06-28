@@ -9,19 +9,7 @@ import {
   getDateBasedOnTime,
   getDefaultEndDate
 } from '@/utils/dateUtils';
-
-interface Transaction {
-  id: string;
-  staff_code: string;
-  transaction_date: string;
-  parts_day: string;
-  room: string;
-  transaction_type: string;
-  asset_year: number;
-  asset_code: number;
-  note: string;
-  created_at?: string;
-}
+import { groupTransactions, getFilterDisplayTextUtil, Transaction } from '@/utils/reportUtils';
 
 export const useDailyReportLogic = () => {
   // UI State
@@ -39,10 +27,9 @@ export const useDailyReportLogic = () => {
   const ITEMS_PER_PAGE = 10;
 
   // Initialize date values once using useState with a function initializer
-  // This ensures they are calculated only on the initial render and remain stable.
   const [gmtPlus7Date] = useState(() => getGMTPlus7Date());
   const [morningTargetDate] = useState(() => getDateBasedOnTime());
-  const [nextWorkingDayDate] = useState(() => getNextWorkingDay(gmtPlus7Date)); // Use gmtPlus7Date for consistency
+  const [nextWorkingDayDate] = useState(() => getNextWorkingDay(gmtPlus7Date));
   const [defaultEndDate] = useState(() => getDefaultEndDate());
 
   const dateStrings = useMemo(() => ({
@@ -64,7 +51,6 @@ export const useDailyReportLogic = () => {
         filters.endDate = customFilters.end;
         filters.parts_day = customFilters.parts_day as 'Sáng' | 'Chiều' | 'all';
       } else {
-        // If custom filters are not fully set, return an empty object to disable query
         return {};
       }
     } else {
@@ -92,12 +78,11 @@ export const useDailyReportLogic = () => {
           filters.endDate = nextWorkingDayStr;
           break;
         default:
-          // Should not happen if filterType is always one of the defined cases
           return {};
       }
     }
     return filters;
-  }, [filterType, customFilters, gmtPlus7Date, morningTargetDate, nextWorkingDayDate]); // Dependencies for memoization
+  }, [filterType, customFilters, gmtPlus7Date, morningTargetDate, nextWorkingDayDate]);
 
   // Effect to initialize custom filter dates
   useEffect(() => {
@@ -106,14 +91,14 @@ export const useDailyReportLogic = () => {
       end: defaultEndDate.toISOString().split('T')[0],
       parts_day: 'all'
     });
-  }, [gmtPlus7Date, defaultEndDate]); // Now depends on stable date state variables
+  }, [gmtPlus7Date, defaultEndDate]);
 
   // Data fetching with React Query
   const { data: transactions = [], isLoading } = useQuery<Transaction[], Error>({
     queryKey: ['assetTransactions', currentQueryFilters],
     queryFn: () => getAssetTransactions(currentQueryFilters),
-    enabled: !!currentQueryFilters.startDate, // Only run query if filters have a start date
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!currentQueryFilters.startDate,
+    staleTime: 5 * 60 * 1000,
     onError: (error) => {
       console.error('Error loading transactions:', error);
       toast.error(`Không thể tải dữ liệu: ${error.message}`);
@@ -138,39 +123,13 @@ export const useDailyReportLogic = () => {
   // Handler for the custom filter button
   const handleCustomFilter = () => {
     if (customFilters.start && customFilters.end) {
-      setFilterType('custom'); // This will trigger currentQueryFilters re-evaluation and then useQuery
+      setFilterType('custom');
     } else {
       toast.warning("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
     }
   };
 
-  const groupedRows = useMemo(() => {
-    const groups: { [key: string]: { [year: string]: number[] } } = {};
-    transactions.forEach(t => {
-      if (!groups[t.room]) groups[t.room] = {};
-      if (!groups[t.room][t.asset_year]) groups[t.room][t.asset_year] = [];
-      groups[t.room][t.asset_year].push(t.asset_code);
-    });
-
-    const frequencyMap = new Map<string, number>();
-    transactions.forEach(t => {
-      const key = `${t.room}-${t.asset_year}-${t.asset_code}`;
-      frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
-    });
-
-    const result = [];
-    for (const room of Object.keys(groups).sort()) {
-      for (const year of Object.keys(groups[room]).sort()) {
-        const codes = [...new Set(groups[room][year])].sort((a, b) => a - b);
-        const codesWithAsterisk = codes.map(code => {
-          const key = `${room}-${year}-${code}`;
-          return frequencyMap.get(key)! > 1 ? `${code}*` : code.toString();
-        });
-        result.push({ room, year, codes: codesWithAsterisk.join(', ') });
-      }
-    }
-    return result;
-  }, [transactions]);
+  const groupedRows = useMemo(() => groupTransactions(transactions), [transactions]);
 
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -188,18 +147,11 @@ export const useDailyReportLogic = () => {
   };
 
   const getFilterDisplayText = () => {
-    switch (filterType) {
-      case 'qln_pgd_next_day': return `QLN Sáng & PGD trong ngày (${dateStrings.morningTargetFormatted})`;
-      case 'morning': return `Sáng ngày (${dateStrings.morningTargetFormatted})`;
-      case 'afternoon': return `Chiều ngày (${dateStrings.nextWorkingDayFormatted})`;
-      case 'today': return `Trong ngày hôm nay (${dateStrings.todayFormatted})`;
-      case 'next_day': return `Trong ngày kế tiếp (${dateStrings.nextWorkingDayFormatted})`;
-      case 'custom':
-        return customFilters.start && customFilters.end 
-          ? `Từ ${formatToDDMMYYYY(new Date(customFilters.start))} đến ${formatToDDMMYYYY(new Date(customFilters.end))}`
-          : 'Tùy chọn khoảng thời gian';
-      default: return '';
-    }
+    return getFilterDisplayTextUtil({
+      filterType,
+      dateStrings,
+      customFilters,
+    });
   };
 
   return {

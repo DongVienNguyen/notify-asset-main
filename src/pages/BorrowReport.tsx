@@ -1,10 +1,12 @@
 import React from 'react';
+import { Download } from 'lucide-react';
 import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import BorrowReportHeader from '@/components/BorrowReportHeader';
 import BorrowReportFilters from '@/components/BorrowReportFilters';
 import BorrowReportTable from '@/components/BorrowReportTable';
 import { useBorrowReportData } from '@/hooks/useBorrowReportData';
+import { Button } from '@/components/ui/button';
 
 const BorrowReport = () => {
   const {
@@ -19,7 +21,8 @@ const BorrowReport = () => {
     paginatedTransactions,
     totalPages,
     rooms,
-    ITEMS_PER_PAGE
+    ITEMS_PER_PAGE,
+    exportToCSV,
   } = useBorrowReportData();
 
   if (isLoading) {
@@ -46,12 +49,20 @@ const BorrowReport = () => {
             rooms={rooms}
           />
 
+          <div className="flex justify-end">
+            <Button onClick={exportToCSV} variant="outline" className="bg-green-500 text-white hover:bg-green-600">
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </Button>
+          </div>
+
           <BorrowReportTable
-            transactions={paginatedTransactions} // Changed from filteredTransactions to paginatedTransactions and renamed prop
+            transactions={paginatedTransactions}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
             totalPages={totalPages}
             ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+            totalRecords={filteredTransactions.length}
           />
         </div>
 

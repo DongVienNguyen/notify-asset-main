@@ -5,13 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { getAssetTransactions } from '@/services/assetService';
 import { formatToDDMMYYYY } from '@/utils/dateUtils';
 import DateInput from '@/components/DateInput';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Transaction {
   id: string;
@@ -38,7 +37,6 @@ const DailyReport = () => {
     parts_day: 'all'
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const { toast } = useToast();
   const resultsRef = useRef<HTMLDivElement>(null);
   
   const ITEMS_PER_PAGE = 10;
@@ -178,6 +176,8 @@ const DailyReport = () => {
               const matchPartsDay = customFilters.parts_day === 'all' || t.parts_day === customFilters.parts_day;
               return matchDate && matchPartsDay;
             });
+          } else {
+            filtered = []; // Don't show any data if date range is not set
           }
           break;
       }
@@ -207,27 +207,21 @@ const DailyReport = () => {
       
     } catch (error) {
       console.error('Error loading transactions:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải dữ liệu từ cơ sở dữ liệu",
-        variant: "destructive",
-      });
+      toast.error("Không thể tải dữ liệu từ cơ sở dữ liệu");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Load data when filter changes
+  // Load data when filter changes (but not for custom)
   useEffect(() => {
-    loadTransactionsForFilter(filterType, customFilters);
-  }, [filterType]);
-
-  // Load data when custom filters change
-  useEffect(() => {
-    if (filterType === 'custom') {
-      loadTransactionsForFilter(filterType, customFilters);
+    if (filterType !== 'custom') {
+      loadTransactionsForFilter(filterType);
+    } else {
+      // Clear data when switching to custom until user clicks filter
+      setFilteredTransactions([]);
     }
-  }, [customFilters]);
+  }, [filterType]);
 
   // Initialize default custom filter dates
   useEffect(() => {
@@ -244,8 +238,6 @@ const DailyReport = () => {
   const getMorningTargetDate = () => {
     return getDateBasedOnTime();
   };
-
-  // Updated formatDate function to use dd/MM/yyyy format is now removed
 
   const groupedRows = useMemo(() => {
     const groups: { [key: string]: { [year: string]: number[] } } = {};
@@ -334,7 +326,7 @@ const DailyReport = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !isExporting) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-96">
@@ -394,7 +386,7 @@ const DailyReport = () => {
             </RadioGroup>
 
             {filterType === 'custom' && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">Chọn buổi</Label>
                   <Select 
@@ -427,6 +419,9 @@ const DailyReport = () => {
                     onChange={(value) => setCustomFilters(prev => ({ ...prev, end: value }))}
                   />
                 </div>
+                <Button onClick={() => loadTransactionsForFilter('custom', customFilters)}>
+                  Lọc
+                </Button>
               </div>
             )}
           </CardContent>

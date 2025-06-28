@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Archive, History } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,6 @@ import OtherAssetTable from '@/components/OtherAssetTable';
 
 const OtherAssets = () => {
   const { user } = useSecureAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   
   const {
@@ -36,15 +35,13 @@ const OtherAssets = () => {
   // Check permissions
   useEffect(() => {
     if (user && user.department !== 'NQ' && user.role !== 'admin') {
-      toast({
-        title: "Không có quyền truy cập",
-        description: "Chỉ nhân viên phòng NQ và admin mới có thể truy cập module này",
-        variant: "destructive",
+      toast.error("Chỉ nhân viên phòng NQ và admin mới có thể truy cập module này", {
+        description: "Không có quyền truy cập",
       });
       navigate('/');
       return;
     }
-  }, [user, navigate, toast]);
+  }, [user, navigate]);
 
   const handleCancelEdit = () => {
     setEditingAsset(null);

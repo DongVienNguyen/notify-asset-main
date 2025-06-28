@@ -38,7 +38,7 @@ const OtherAssetTable = ({ filteredAssets, user, onEdit, onDelete }) => {
                     <Edit className="w-4 h-4" />
                   </Button>
                   {user?.role === 'admin' && (
-                    <Button size="sm" variant="destructive" onClick={() => onDelete(asset.id)}>
+                    <Button size="sm" variant="destructive" onClick={() => onDelete(asset)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}

@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Layout from '@/components/Layout';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
 import JSZip from 'jszip';
+import DateInput from '@/components/DateInput';
 
 type TableName = keyof Database['public']['Tables'];
 
@@ -45,7 +46,6 @@ const DataManagement = () => {
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const { user } = useSecureAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const ITEMS_PER_PAGE = 20;
@@ -53,10 +53,8 @@ const DataManagement = () => {
   // Check admin access and set user context
   useEffect(() => {
     if (user && user.role !== 'admin') {
-      toast({
-        title: "Không có quyền truy cập",
-        description: "Chỉ admin mới có thể truy cập module này",
-        variant: "destructive",
+      toast.error("Chỉ admin mới có thể truy cập module này", {
+        description: "Không có quyền truy cập",
       });
       navigate('/');
       return;
@@ -75,17 +73,15 @@ const DataManagement = () => {
           console.log('User context set successfully');
         } catch (error) {
           console.error('Error setting user context:', error);
-          toast({
-            title: "Cảnh báo",
-            description: "Không thể thiết lập context người dùng",
-            variant: "destructive",
+          toast.error("Không thể thiết lập context người dùng", {
+            description: "Cảnh báo",
           });
         }
       }
     };
 
     setUserContext();
-  }, [user, navigate, toast]);
+  }, [user, navigate]);
 
   // Comprehensive entity configuration for all database tables
   const entityConfig: Record<string, EntityConfig> = {
@@ -238,13 +234,9 @@ const DataManagement = () => {
       
       setData(result || []);
       console.log('Data loaded successfully:', result?.length, 'records');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
-      toast({
-        title: "Lỗi",
-        description: `Không thể tải dữ liệu: ${error.message || 'Lỗi không xác định'}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể tải dữ liệu: ${error.message || 'Lỗi không xác định'}`);
       setData([]);
     } finally {
       setIsLoading(false);
@@ -317,11 +309,7 @@ const DataManagement = () => {
       
       for (const field of requiredFields) {
         if (!formData[field.key]) {
-          toast({
-            title: "Lỗi",
-            description: `Vui lòng điền ${field.label}`,
-            variant: "destructive",
-          });
+          toast.error(`Vui lòng điền ${field.label}`);
           return;
         }
       }
@@ -345,10 +333,7 @@ const DataManagement = () => {
 
         if (error) throw error;
 
-        toast({
-          title: "Thành công",
-          description: "Cập nhật thành công",
-        });
+        toast.success("Cập nhật thành công");
       } else {
         const { error } = await supabase
           .from(config.entity as any)
@@ -356,21 +341,14 @@ const DataManagement = () => {
 
         if (error) throw error;
 
-        toast({
-          title: "Thành công",
-          description: "Thêm mới thành công",
-        });
+        toast.success("Thêm mới thành công");
       }
 
       setDialogOpen(false);
       loadData();
     } catch (error) {
       console.error('Error saving:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể lưu dữ liệu",
-        variant: "destructive",
-      });
+      toast.error("Không thể lưu dữ liệu");
     }
   };
 
@@ -386,19 +364,12 @@ const DataManagement = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Xóa thành công",
-      });
+      toast.success("Xóa thành công");
 
       loadData();
     } catch (error) {
       console.error('Error deleting:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa dữ liệu",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa dữ liệu");
     }
   };
 
@@ -415,19 +386,12 @@ const DataManagement = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: `Đã ${newStatus === 'locked' ? 'khóa' : 'mở khóa'} tài khoản`,
-      });
+      toast.success(`Đã ${newStatus === 'locked' ? 'khóa' : 'mở khóa'} tài khoản`);
 
       loadData();
     } catch (error) {
       console.error('Error toggling staff lock:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể thay đổi trạng thái tài khoản",
-        variant: "destructive",
-      });
+      toast.error("Không thể thay đổi trạng thái tài khoản");
     }
   };
 
@@ -524,17 +488,10 @@ const DataManagement = () => {
         URL.revokeObjectURL(url);
       }
 
-      toast({
-        title: "Thành công",
-        description: "Đã tải về backup toàn bộ dữ liệu dưới dạng file ZIP",
-      });
+      toast.success("Đã tải về backup toàn bộ dữ liệu dưới dạng file ZIP");
     } catch (error) {
       console.error('Error backing up data:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể backup dữ liệu",
-        variant: "destructive",
-      });
+      toast.error("Không thể backup dữ liệu");
     } finally {
       setIsBackingUp(false);
     }
@@ -542,11 +499,7 @@ const DataManagement = () => {
 
   const bulkDeleteTransactions = async () => {
     if (!startDate || !endDate) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng chọn khoảng ngày",
-        variant: "destructive",
-      });
+      toast.error("Vui lòng chọn khoảng ngày");
       return;
     }
 
@@ -559,21 +512,14 @@ const DataManagement = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Đã xóa giao dịch trong khoảng thời gian đã chọn",
-      });
+      toast.success("Đã xóa giao dịch trong khoảng thời gian đã chọn");
 
       if (selectedEntity === 'AssetTransaction') {
         loadData();
       }
     } catch (error) {
       console.error('Error bulk deleting:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa dữ liệu",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa dữ liệu");
     }
   };
 
@@ -677,18 +623,18 @@ const DataManagement = () => {
                   <div className="flex flex-col md:flex-row gap-4 items-end">
                     <div>
                       <Label>Ngày bắt đầu</Label>
-                      <Input
-                        type="date"
+                      <DateInput
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={setStartDate}
+                        placeholder="Chọn ngày bắt đầu"
                       />
                     </div>
                     <div>
                       <Label>Ngày kết thúc</Label>
-                      <Input
-                        type="date"
+                      <DateInput
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={setEndDate}
+                        placeholder="Chọn ngày kết thúc"
                       />
                     </div>
                     <Button 

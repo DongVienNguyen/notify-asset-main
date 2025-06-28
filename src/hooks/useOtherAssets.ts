@@ -1,134 +1,190 @@
-
 import { useState, useEffect, useMemo } from 'react';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useOtherAssetOperations } from '@/hooks/useOtherAssetOperations';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
 
-interface OtherAsset {
-  id: string;
-  name: string;
-  deposit_date: string;
-  depositor: string;
-  deposit_receiver: string;
-  withdrawal_date?: string;
-  withdrawal_deliverer?: string;
-  withdrawal_receiver?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+type OtherAsset = Database['public']['Tables']['other_assets']['Row'];
+type User = {
+  username: string;
+  role: string;
+  department: string;
+} | null;
 
-export const useOtherAssets = (user: any) => {
+export const useOtherAssets = (user: User) => {
   const [assets, setAssets] = useState<OtherAsset[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null);
   const [changeReason, setChangeReason] = useState('');
-  const [newAsset, setNewAsset] = useState({
+  const [newAsset, setNewAsset] = useState<Partial<OtherAsset>>({
     name: '',
-    deposit_date: '',
+    deposit_date: null,
     depositor: '',
     deposit_receiver: '',
-    withdrawal_date: '',
+    withdrawal_date: null,
     withdrawal_deliverer: '',
     withdrawal_receiver: '',
     notes: ''
   });
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const { loadAssets, saveAsset, deleteAsset: deleteAssetOperation } = useOtherAssetOperations(user);
-
-  // Load initial data
   useEffect(() => {
-    const loadInitialData = async () => {
-      if (!user) return;
-      
-      setIsLoading(true);
+    const loadAssets = async () => {
       try {
-        const assetsData = await loadAssets();
-        setAssets(assetsData);
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('other_assets')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setAssets(data || []);
+      } catch (error: any) {
+        console.error("Error loading other assets:", error);
+        toast.error(`Không thể tải tài sản khác: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadInitialData();
-  }, [user]);
+    loadAssets();
+  }, []);
 
-  // Filter assets based on search term
   const filteredAssets = useMemo(() => {
-    return assets.filter(asset => 
-      asset.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      asset.depositor?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      asset.deposit_receiver?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      asset.withdrawal_deliverer?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      asset.withdrawal_receiver?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    if (!searchTerm) return assets;
+    return assets.filter(asset =>
+      Object.values(asset).some(value =>
+        String(value).toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
-  }, [assets, debouncedSearchTerm]);
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      const success = await saveAsset(newAsset, editingAsset, changeReason);
-      
-      if (success) {
-        // Reload data
-        const refreshedData = await loadAssets();
-        setAssets(refreshedData);
-        clearForm();
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const editAsset = (asset: OtherAsset) => {
-    setNewAsset({
-      name: asset.name,
-      deposit_date: asset.deposit_date,
-      depositor: asset.depositor || '',
-      deposit_receiver: asset.deposit_receiver || '',
-      withdrawal_date: asset.withdrawal_date || '',
-      withdrawal_deliverer: asset.withdrawal_deliverer || '',
-      withdrawal_receiver: asset.withdrawal_receiver || '',
-      notes: asset.notes?.replace(/\[.*?\]/g, '').trim() || ''
-    });
-    setEditingAsset(asset);
-    setChangeReason('');
-  };
-
-  const deleteAsset = async (asset: OtherAsset) => {
-    setIsLoading(true);
-    
-    try {
-      const success = await deleteAssetOperation(asset);
-      
-      if (success) {
-        const { data: refreshedData } = await supabase
-          .from('other_assets')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        setAssets(refreshedData || []);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [assets, searchTerm]);
 
   const clearForm = () => {
     setNewAsset({
       name: '',
-      deposit_date: '',
+      deposit_date: null,
       depositor: '',
       deposit_receiver: '',
-      withdrawal_date: '',
+      withdrawal_date: null,
       withdrawal_deliverer: '',
       withdrawal_receiver: '',
       notes: ''
     });
     setEditingAsset(null);
     setChangeReason('');
+  };
+
+  const handleSave = async () => {
+    if (!newAsset.name) {
+      toast.error('Vui lòng nhập tên tài sản / thùng.');
+      return;
+    }
+
+    if (editingAsset && !changeReason) {
+      toast.error('Vui lòng nhập lý do thay đổi.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const assetData = { ...newAsset };
+
+      if (editingAsset) {
+        // Update existing asset
+        const { data: updatedAsset, error } = await supabase
+          .from('other_assets')
+          .update(assetData)
+          .eq('id', editingAsset.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Log change to history
+        await supabase.from('asset_history_archive').insert({
+          original_asset_id: editingAsset.id,
+          asset_name: editingAsset.name,
+          change_type: 'UPDATE',
+          changed_by: user?.username || 'unknown',
+          change_reason: changeReason,
+          old_data: editingAsset,
+          new_data: updatedAsset,
+        });
+
+        toast.success('Cập nhật tài sản thành công');
+      } else {
+        // Create new asset
+        const { error } = await supabase.from('other_assets').insert([assetData]);
+        if (error) throw error;
+        toast.success('Thêm tài sản thành công');
+      }
+
+      clearForm();
+      // Refresh data
+      const { data, error: fetchError } = await supabase.from('other_assets').select('*').order('created_at', { ascending: false });
+      if (fetchError) throw fetchError;
+      setAssets(data || []);
+
+    } catch (error: any) {
+      console.error("Error saving asset:", error);
+      toast.error(`Không thể lưu tài sản: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const editAsset = (asset: OtherAsset) => {
+    setEditingAsset(asset);
+    setNewAsset({ ...asset });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const deleteAsset = async (asset: OtherAsset) => {
+    if (!user || user.role !== 'admin') {
+      toast.error('Chỉ admin mới có quyền xóa.');
+      return;
+    }
+    
+    const assetId = asset?.id;
+    if (!assetId) {
+      toast.error("Không thể xóa tài sản: ID không hợp lệ.");
+      console.error("deleteAsset called with invalid asset object:", asset);
+      return;
+    }
+
+    if (!window.confirm('Bạn có chắc chắn muốn xóa tài sản này? Thao tác này không thể hoàn tác.')) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Log deletion to history
+      await supabase.from('asset_history_archive').insert({
+        original_asset_id: assetId,
+        asset_name: asset.name,
+        change_type: 'DELETE',
+        changed_by: user?.username || 'unknown',
+        change_reason: 'Xóa khỏi hệ thống',
+        old_data: asset,
+        new_data: null,
+      });
+
+      // Perform deletion
+      const { error } = await supabase.from('other_assets').delete().eq('id', assetId);
+      if (error) throw error;
+
+      toast.success('Xóa tài sản thành công');
+      // Refresh data
+      const { data, error: fetchError } = await supabase.from('other_assets').select('*').order('created_at', { ascending: false });
+      if (fetchError) throw fetchError;
+      setAssets(data || []);
+
+    } catch (error: any) {
+      console.error("Error deleting asset:", error);
+      toast.error(`Không thể xóa tài sản: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {
@@ -138,6 +194,7 @@ export const useOtherAssets = (user: any) => {
     searchTerm,
     setSearchTerm,
     editingAsset,
+    setEditingAsset,
     changeReason,
     setChangeReason,
     newAsset,
@@ -146,6 +203,5 @@ export const useOtherAssets = (user: any) => {
     editAsset,
     deleteAsset,
     clearForm,
-    setEditingAsset
   };
 };

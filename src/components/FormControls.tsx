@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Building, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DateInput from './DateInput';
 
 interface FormData {
   transaction_date: string;
@@ -56,11 +56,9 @@ const FormControls = ({ formData, onRoomChange, onFormDataChange, showAssetInput
               </SelectContent>
             </Select>
             
-            <Input
-              type="date"
+            <DateInput
               value={formData.transaction_date}
-              onChange={(e) => onFormDataChange('transaction_date', e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+              onChange={(value) => onFormDataChange('transaction_date', value)}
             />
           </div>
         </div>

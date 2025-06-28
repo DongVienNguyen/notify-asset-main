@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ interface DateInputProps {
 }
 
 const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, className }) => {
+  const [open, setOpen] = useState(false);
   // Convert YYYY-MM-DD string to Date object for react-day-picker
   // parseISO creates a Date object in local time.
   const selectedDate = value ? (isValid(parseISO(value)) ? parseISO(value) : undefined) : undefined;
@@ -21,10 +22,11 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, cla
   const handleDateSelect = (date: Date | undefined) => {
     // Convert selected Date object (local time) back to YYYY-MM-DD string
     onChange(date ? format(date, 'yyyy-MM-dd') : '');
+    setOpen(false); // Close popover on select
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}

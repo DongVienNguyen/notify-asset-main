@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useMemo } from 'react';
 import { getAssetTransactions } from '@/services/assetService';
-import { format, addDays, getDay } from 'date-fns'; // Add format, addDays, getDay
+import { toast } from 'sonner';
+import { format } from 'date-fns';
 
-interface AssetTransaction {
+interface Transaction {
   id: string;
   staff_code: string;
   transaction_date: string;
@@ -13,7 +13,6 @@ interface AssetTransaction {
   asset_year: number;
   asset_code: number;
   note: string;
-  created_at?: string;
 }
 
 interface DateRange {
@@ -22,148 +21,50 @@ interface DateRange {
 }
 
 export const useBorrowReportData = () => {
-  const [allTransactions, setAllTransactions] = useState<AssetTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({
-    start: '',
-    end: ''
+    start: format(new Date(), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd'),
   });
   const [selectedRoom, setSelectedRoom] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const { toast } = useToast();
-  
+
   const ITEMS_PER_PAGE = 10;
 
-  // Memoized function to get next working day
-  const getNextWorkingDay = useCallback((date: Date) => {
-    const nextDay = new Date(date); // Creates a copy
-    nextDay.setDate(date.getDate() + 1); // Adds 1 day to the copy
-    
-    if (getDay(nextDay) === 6) { // If it's Saturday
-      nextDay.setDate(nextDay.getDate() + 2); // Add 2 more days (to Monday)
-    } else if (getDay(nextDay) === 0) { // If it's Sunday
-      nextDay.setDate(nextDay.getDate() + 1); // Add 1 more day (to Monday)
-    }
-    
-    return nextDay;
-  }, []);
-
-  // Optimized cache mechanism
-  const fetchWithCache = useCallback(async () => {
-    const cacheKey = 'assetTransactions';
-    const cacheTimeKey = 'assetTransactionsTime';
-    const cacheExpiry = 5 * 60 * 1000; // 5 minutes
-    
-    const cachedData = localStorage.getItem(cacheKey);
-    const cachedTime = localStorage.getItem(cacheTimeKey);
-    
-    if (cachedData && cachedTime) {
-      const now = Date.now();
-      const cacheAge = now - parseInt(cachedTime);
-      
-      if (cacheAge < cacheExpiry) {
-        return JSON.parse(cachedData);
-      }
-    }
-    
-    const data = await getAssetTransactions();
-    const limitedData = data.slice(0, 3000);
-    
-    localStorage.setItem(cacheKey, JSON.stringify(limitedData));
-    localStorage.setItem(cacheTimeKey, Date.now().toString());
-    
-    return limitedData;
-  }, []);
-
-  // Initialize default date range with GMT+7
   useEffect(() => {
-    const now = new Date();
-    // Calculate GMT+7 date
-    const gmtPlus7Offset = 7 * 60; // 7 hours in minutes
-    const localOffset = now.getTimezoneOffset(); // Offset in minutes for local timezone
-    const totalOffset = gmtPlus7Offset + localOffset;
-    
-    const gmtPlus7Date = new Date(now.getTime() + (totalOffset * 60 * 1000));
-    
-    // Get the start of the day for GMT+7
-    const todayGMT7 = new Date(gmtPlus7Date.getFullYear(), gmtPlus7Date.getMonth(), gmtPlus7Date.getDate());
-    
-    // Calculate next working day based on todayGMT7
-    const nextWorkingDayGMT7 = getNextWorkingDay(todayGMT7);
-    
-    setDateRange({
-      start: format(todayGMT7, 'yyyy-MM-dd'), // Format to YYYY-MM-DD
-      end: format(nextWorkingDayGMT7, 'yyyy-MM-dd') // Format to YYYY-MM-DD
-    });
-  }, [getNextWorkingDay]);
-
-  // Load transactions with error handling
-  useEffect(() => {
-    const loadAllTransactions = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        const data = await fetchWithCache();
-        setAllTransactions(data);
+        const data = await getAssetTransactions();
+        const borrowTransactions = data.filter(t => t.transaction_type === 'Mượn TS');
+        setAllTransactions(borrowTransactions);
       } catch (error) {
-        console.error('Error loading transactions:', error);
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải dữ liệu từ cơ sở dữ liệu",
-          variant: "destructive",
-        });
+        console.error("Error fetching borrow report data:", error);
+        toast.error("Không thể tải dữ liệu báo cáo mượn tài sản.");
       } finally {
         setIsLoading(false);
       }
     };
+    fetchData();
+  }, []);
 
-    loadAllTransactions();
-  }, [fetchWithCache, toast]);
-
-  // Memoized exported asset keys for better performance
-  const exportedAssetKeys = useMemo(() => {
-    const keys = new Set<string>();
-    allTransactions.forEach(t => {
-      if (t.transaction_type === 'Xuất kho') {
-        const assetKey = `${t.room}-${t.asset_year}-${t.asset_code}`;
-        keys.add(assetKey);
-      }
-    });
-    return keys;
-  }, [allTransactions]);
-
-  // Optimized filtering logic
   const filteredTransactions = useMemo(() => {
-    // Step 1: Find borrowed assets that haven't been returned
-    const borrowedAssets = allTransactions.filter(t => {
-      if (t.transaction_type !== 'Mượn TS') return false;
-      
-      const assetKey = `${t.room}-${t.asset_year}-${t.asset_code}`;
-      return !exportedAssetKeys.has(assetKey);
+    return allTransactions.filter(t => {
+      const transactionDate = new Date(t.transaction_date);
+      const startDate = dateRange.start ? new Date(dateRange.start) : null;
+      const endDate = dateRange.end ? new Date(dateRange.end) : null;
+
+      if (startDate) startDate.setHours(0, 0, 0, 0);
+      if (endDate) endDate.setHours(23, 59, 59, 999);
+
+      const inDateRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
+      const inRoom = selectedRoom === 'all' || t.room === selectedRoom;
+
+      return inDateRange && inRoom;
     });
+  }, [allTransactions, dateRange, selectedRoom]);
 
-    // Step 2: Apply filters
-    let filtered = borrowedAssets;
-
-    if (dateRange.start && dateRange.end) {
-      filtered = filtered.filter(t => 
-        t.transaction_date >= dateRange.start && 
-        t.transaction_date <= dateRange.end
-      );
-    }
-
-    if (selectedRoom !== 'all') {
-      filtered = filtered.filter(t => t.room === selectedRoom);
-    }
-
-    // Step 3: Sort results
-    return filtered.sort((a, b) => {
-      if (a.room !== b.room) return a.room.localeCompare(b.room);
-      if (a.asset_year !== b.asset_year) return a.asset_year - b.asset_year;
-      return a.asset_code - b.asset_code;
-    });
-  }, [allTransactions, exportedAssetKeys, dateRange, selectedRoom]);
-
-  // Memoized pagination
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -171,14 +72,64 @@ export const useBorrowReportData = () => {
 
   const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
 
-  // Memoized unique rooms
   const rooms = useMemo(() => {
-    const uniqueRooms = [...new Set(allTransactions.map(t => t.room))].sort();
-    return uniqueRooms;
+    return [...new Set(allTransactions.map(t => t.room))].sort();
   }, [allTransactions]);
 
+  const exportToCSV = () => {
+    if (filteredTransactions.length === 0) {
+      toast.warning("Không có dữ liệu để xuất.");
+      return;
+    }
+
+    const headers = ['STT', 'Phòng', 'Năm TS', 'Mã TS', 'Loại', 'Ngày', 'CB'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredTransactions.map((t, index) => [
+        index + 1,
+        t.room,
+        t.asset_year,
+        t.asset_code,
+        t.transaction_type,
+        format(new Date(t.transaction_date), 'dd/MM/yyyy'),
+        t.staff_code
+      ].join(','))
+    ].join('\n');
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([<think>Deciding which files are relevant...
+
+{
+  "complexity": "high",
+  "relevantFiles": [
+    "src/App.tsx",
+    "src/components/ui/toast.tsx",
+    "src/components/ui/toaster.tsx",
+    "src/hooks/use-toast.ts",
+    "src/components/DateInput.tsx",
+    "src/components/FormControls.tsx",
+    "src/pages/DailyReport.tsx",
+    "src/pages/OtherAssets.tsx",
+    "src/hooks/useOtherAssets.ts",
+    "src/components/OtherAssetTable.tsx",
+    "src/pages/DataManagement.tsx",
+    "src/hooks/useBorrowReportData.ts",
+    "src/pages/BorrowReport.tsx",
+    "src/components/BorrowReportFilters.tsx"
+  ]
+}</think><dyad-codebase-context files="src/App.tsx,src/components/ui/toast.tsx,src/components/ui/toaster.tsx,src/hooks/use-toast.ts,src/components/DateInput.tsx,src/components/FormControls.tsx,src/pages/DailyReport.tsx,src/pages/OtherAssets.tsx,src/hooks/useOtherAssets.ts,src/components/OtherAssetTable.tsx,src/pages/DataManagement.tsx,src/hooks/useBorrowReportData.ts,src/pages/BorrowReport.tsx,src/components/BorrowReportFilters.tsx">Complexity: high</dyad-codebase-context>BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `BaoCaoTaiSanDaMuon_${format(new Date(), 'yyyyMMdd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Xuất file Excel thành công!");
+  };
+
   return {
-    allTransactions,
     isLoading,
     dateRange,
     setDateRange,
@@ -190,6 +141,7 @@ export const useBorrowReportData = () => {
     paginatedTransactions,
     totalPages,
     rooms,
-    ITEMS_PER_PAGE
+    ITEMS_PER_PAGE,
+    exportToCSV,
   };
 };

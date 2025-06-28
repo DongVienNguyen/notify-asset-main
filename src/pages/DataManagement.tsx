@@ -249,9 +249,11 @@ const DataManagement = () => {
   }, [selectedEntity, isUserContextSet]); // Add isUserContextSet as a dependency
 
   useEffect(() => {
-    loadStatistics();
-    loadStaffTransactionStats();
-  }, []);
+    if (isUserContextSet) {
+      loadStatistics();
+      loadStaffTransactionStats();
+    }
+  }, [isUserContextSet]);
 
   const loadData = async () => {
     if (!selectedEntity) return;

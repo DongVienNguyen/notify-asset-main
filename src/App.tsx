@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner"
 
 import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/ProtectedRoute'; // Changed from import ProtectedRoute from './components/ProtectedRoute';
 import { useSecureAuth } from './hooks/useSecureAuth';
 
 // Pages
@@ -42,15 +42,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
-          <Route path="/" element={<ProtectedRoute user={user}><Index /></ProtectedRoute>} />
-          <Route path="/asset-entry" element={<ProtectedRoute user={user}><AssetEntry /></ProtectedRoute>} />
-          <Route path="/daily-report" element={<ProtectedRoute user={user}><DailyReport /></ProtectedRoute>} />
-          <Route path="/borrow-report" element={<ProtectedRoute user={user}><BorrowReport /></ProtectedRoute>} />
-          <Route path="/asset-reminders" element={<ProtectedRoute user={user}><AssetReminders /></ProtectedRoute>} />
-          <Route path="/crc-reminders" element={<ProtectedRoute user={user}><CRCReminders /></ProtectedRoute>} />
-          <Route path="/other-assets" element={<ProtectedRoute user={user}><OtherAssets /></ProtectedRoute>} />
-          <Route path="/data-management" element={<ProtectedRoute user={user}><DataManagement /></ProtectedRoute>} />
-          <Route path="/error-report" element={<ProtectedRoute user={user}><ErrorReport /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/asset-entry" element={<ProtectedRoute><AssetEntry /></ProtectedRoute>} />
+          <Route path="/daily-report" element={<ProtectedRoute><DailyReport /></ProtectedRoute>} />
+          <Route path="/borrow-report" element={<ProtectedRoute><BorrowReport /></ProtectedRoute>} />
+          <Route path="/asset-reminders" element={<ProtectedRoute><AssetReminders /></ProtectedRoute>} />
+          <Route path="/crc-reminders" element={<ProtectedRoute><CRCReminders /></ProtectedRoute>} />
+          <Route path="/other-assets" element={<ProtectedRoute><OtherAssets /></ProtectedRoute>} />
+          <Route path="/data-management" element={<ProtectedRoute><DataManagement /></ProtectedRoute>} />
+          <Route path="/error-report" element={<ProtectedRoute><ErrorReport /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

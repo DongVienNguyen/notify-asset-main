@@ -1,5 +1,4 @@
-
-export interface FormData {
+export interface AssetEntryFormState {
   transaction_date: string;
   parts_day: string;
   room: string;

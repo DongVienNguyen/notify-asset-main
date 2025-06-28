@@ -4,19 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DateInput from './DateInput';
-
-interface FormData {
-  transaction_date: string;
-  parts_day: string;
-  room: string;
-  note: string;
-  transaction_type: string;
-}
+import { AssetEntryFormState } from '@/types/assetEntryFormState'; // Import the new interface
 
 interface FormControlsProps {
-  formData: FormData;
+  formData: AssetEntryFormState; // Use the new interface
   onRoomChange: (value: string) => void;
-  onFormDataChange: (field: keyof FormData, value: string) => void;
+  onFormDataChange: (field: keyof AssetEntryFormState, value: string) => void; // Use the new interface
   showAssetInputs?: boolean;
 }
 

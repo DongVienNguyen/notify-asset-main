@@ -97,27 +97,7 @@ export const useBorrowReportData = () => {
     ].join('\n');
 
     const BOM = '\uFEFF';
-    const blob = new Blob([<think>Deciding which files are relevant...
-
-{
-  "complexity": "high",
-  "relevantFiles": [
-    "src/App.tsx",
-    "src/components/ui/toast.tsx",
-    "src/components/ui/toaster.tsx",
-    "src/hooks/use-toast.ts",
-    "src/components/DateInput.tsx",
-    "src/components/FormControls.tsx",
-    "src/pages/DailyReport.tsx",
-    "src/pages/OtherAssets.tsx",
-    "src/hooks/useOtherAssets.ts",
-    "src/components/OtherAssetTable.tsx",
-    "src/pages/DataManagement.tsx",
-    "src/hooks/useBorrowReportData.ts",
-    "src/pages/BorrowReport.tsx",
-    "src/components/BorrowReportFilters.tsx"
-  ]
-}</think><dyad-codebase-context files="src/App.tsx,src/components/ui/toast.tsx,src/components/ui/toaster.tsx,src/hooks/use-toast.ts,src/components/DateInput.tsx,src/components/FormControls.tsx,src/pages/DailyReport.tsx,src/pages/OtherAssets.tsx,src/hooks/useOtherAssets.ts,src/components/OtherAssetTable.tsx,src/pages/DataManagement.tsx,src/hooks/useBorrowReportData.ts,src/pages/BorrowReport.tsx,src/components/BorrowReportFilters.tsx">Complexity: high</dyad-codebase-context>BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);

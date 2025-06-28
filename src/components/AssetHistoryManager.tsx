@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { History, Info, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
 import { supabase } from '@/integrations/supabase/client';
 
 interface AssetHistory {
@@ -27,7 +26,7 @@ interface AssetHistoryManagerProps {
 const AssetHistoryManager: React.FC<AssetHistoryManagerProps> = ({ user }) => {
   const [historyData, setHistoryData] = useState<AssetHistory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
 
   // Function to load history data from the independent archive table
   const loadHistoryData = async () => {
@@ -71,11 +70,7 @@ const AssetHistoryManager: React.FC<AssetHistoryManagerProps> = ({ user }) => {
       console.error('=== LOAD ARCHIVE HISTORY ERROR ===');
       console.error('Error:', error);
       
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải lịch sử: " + (error as Error).message,
-        variant: "destructive",
-      });
+      toast.error("Không thể tải lịch sử: " + (error as Error).message); // Changed toast usage
       setHistoryData([]);
     } finally {
       setIsLoading(false);
@@ -85,11 +80,7 @@ const AssetHistoryManager: React.FC<AssetHistoryManagerProps> = ({ user }) => {
   // Function to delete a history record
   const deleteHistoryRecord = async (historyId: string, assetName: string) => {
     if (!user || user.role !== 'admin') {
-      toast({
-        title: "Không có quyền",
-        description: "Chỉ admin mới có thể xóa lịch sử",
-        variant: "destructive",
-      });
+      toast.error("Chỉ admin mới có thể xóa lịch sử"); // Changed toast usage
       return;
     }
 
@@ -118,19 +109,12 @@ const AssetHistoryManager: React.FC<AssetHistoryManagerProps> = ({ user }) => {
       // Refresh the history data
       await loadHistoryData();
 
-      toast({
-        title: "Thành công",
-        description: "Xóa bản ghi lịch sử thành công",
-      });
+      toast.success("Xóa bản ghi lịch sử thành công"); // Changed toast usage
 
     } catch (error) {
       console.error('=== DELETE HISTORY ERROR ===');
       console.error('Error:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa bản ghi lịch sử: " + (error as Error).message,
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa bản ghi lịch sử: " + (error as Error).message); // Changed toast usage
     } finally {
       setIsLoading(false);
     }
@@ -237,10 +221,7 @@ const AssetHistoryManager: React.FC<AssetHistoryManagerProps> = ({ user }) => {
                           variant="outline"
                           onClick={() => {
                             console.log('History detail:', history);
-                            toast({
-                              title: "Chi tiết lịch sử",
-                              description: `${history.change_type} by ${history.changed_by}`,
-                            });
+                            toast.info(`Chi tiết lịch sử: ${history.change_type} bởi ${history.changed_by}`); // Changed toast usage
                           }}
                         >
                           <Info className="w-4 h-4" />

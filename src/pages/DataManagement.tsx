@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } => '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Layout from '@/components/Layout';
@@ -210,6 +210,7 @@ const DataManagement = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
+  const [isBackingUp, setIsBackingUp] = useState(false); // New state for backup loading
 
   const { user } = useSecureAuth();
   const navigate = useNavigate();
@@ -443,6 +444,31 @@ const DataManagement = () => {
     link.click();
     document.body.removeChild(link);
     setMessage({ type: 'success', text: "Xuất dữ liệu thành công." });
+  };
+
+  const backupAllData = async () => {
+    setIsBackingUp(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const zip = new JSZip();
+      for (const key in entityConfig) {
+        const { data: tableData, error } = await supabase.from(entityConfig[key].entity as any).select('*');
+        if (error) throw error;
+        zip.file(`${key}.json`, JSON.stringify(tableData, null, 2));
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.setAttribute('download', `supabase_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setMessage({ type: 'success', text: "Sao lưu toàn bộ dữ liệu thành công." });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Không thể sao lưu dữ liệu: ${error.message || 'Lỗi không xác định'}` });
+    } finally {
+      setIsBackingUp(false);
+    }
   };
 
   const handleRestoreData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -719,6 +745,9 @@ const DataManagement = () => {
           </TabsContent>
 
           <TabsContent value="statistics" className="mt-6 space-y-6">
+            <Button onClick={backupAllData} disabled={isBackingUp} className="mb-4">
+              <Download className="mr-2 h-4 w-4" /> {isBackingUp ? 'Đang sao lưu...' : 'Sao lưu toàn bộ dữ liệu'}
+            </Button>
             <Card>
               <CardHeader>
                 <CardTitle>Thống kê số lượng bản ghi</CardTitle>

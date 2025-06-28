@@ -38,24 +38,25 @@ export const useDailyReportLogic = () => {
 
   const ITEMS_PER_PAGE = 10;
 
-  const dateValues = useMemo(() => ({
-    gmtPlus7: getGMTPlus7Date(),
-    morningTargetDate: getDateBasedOnTime(),
-    nextWorkingDay: getNextWorkingDay(getGMTPlus7Date()),
-  }), []);
+  // Initialize date values once using useState with a function initializer
+  // This ensures they are calculated only on the initial render and remain stable.
+  const [gmtPlus7Date] = useState(() => getGMTPlus7Date());
+  const [morningTargetDate] = useState(() => getDateBasedOnTime());
+  const [nextWorkingDayDate] = useState(() => getNextWorkingDay(gmtPlus7Date)); // Use gmtPlus7Date for consistency
+  const [defaultEndDate] = useState(() => getDefaultEndDate());
 
   const dateStrings = useMemo(() => ({
-    todayFormatted: formatToDDMMYYYY(dateValues.gmtPlus7),
-    morningTargetFormatted: formatToDDMMYYYY(dateValues.morningTargetDate),
-    nextWorkingDayFormatted: formatToDDMMYYYY(dateValues.nextWorkingDay),
-  }), [dateValues]);
+    todayFormatted: formatToDDMMYYYY(gmtPlus7Date),
+    morningTargetFormatted: formatToDDMMYYYY(morningTargetDate),
+    nextWorkingDayFormatted: formatToDDMMYYYY(nextWorkingDayDate),
+  }), [gmtPlus7Date, morningTargetDate, nextWorkingDayDate]);
 
   // Derive filters based on filterType and customFilters
   const currentQueryFilters = useMemo(() => {
     const filters: AssetTransactionFilters = {};
-    const todayStr = dateValues.gmtPlus7.toISOString().split('T')[0];
-    const morningTargetStr = dateValues.morningTargetDate.toISOString().split('T')[0];
-    const nextWorkingDayStr = dateValues.nextWorkingDay.toISOString().split('T')[0];
+    const todayStr = gmtPlus7Date.toISOString().split('T')[0];
+    const morningTargetStr = morningTargetDate.toISOString().split('T')[0];
+    const nextWorkingDayStr = nextWorkingDayDate.toISOString().split('T')[0];
 
     if (filterType === 'custom') {
       if (customFilters.start && customFilters.end) {
@@ -96,16 +97,16 @@ export const useDailyReportLogic = () => {
       }
     }
     return filters;
-  }, [filterType, customFilters, dateValues]); // Dependencies for memoization
+  }, [filterType, customFilters, gmtPlus7Date, morningTargetDate, nextWorkingDayDate]); // Dependencies for memoization
 
   // Effect to initialize custom filter dates
   useEffect(() => {
     setCustomFilters({
-      start: dateValues.gmtPlus7.toISOString().split('T')[0],
-      end: getDefaultEndDate().toISOString().split('T')[0],
+      start: gmtPlus7Date.toISOString().split('T')[0],
+      end: defaultEndDate.toISOString().split('T')[0],
       parts_day: 'all'
     });
-  }, [dateValues]);
+  }, [gmtPlus7Date, defaultEndDate]); // Now depends on stable date state variables
 
   // Data fetching with React Query
   const { data: transactions = [], isLoading } = useQuery<Transaction[], Error>({

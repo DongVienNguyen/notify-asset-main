@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Changed from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client';
 
 // Staff Member interface
@@ -15,7 +14,7 @@ export const useStaffData = () => {
     cbkh: [],
     cbqln: []
   });
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
 
   const loadStaffData = async () => {
     try {
@@ -73,20 +72,19 @@ export const useStaffData = () => {
       });
 
       // Success message
-      toast({
-        title: "Thành công",
-        description: `Đã tải ${cbkhStaff.length} CB KH và ${cbqlnStaff.length} CB QLN`,
-      });
+      toast.success( // Changed from toast({ ... })
+        "Thành công",
+        { description: `Đã tải ${cbkhStaff.length} CB KH và ${cbqlnStaff.length} CB QLN` }
+      );
 
       return { cbkhStaff, cbqlnStaff };
     } catch (error: any) {
       console.error('Error loading staff data:', error);
       setStaff({ cbkh: [], cbqln: [] });
-      toast({
-        title: "Lỗi",
-        description: `Không thể tải dữ liệu nhân viên: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error( // Changed from toast({ ... })
+        "Lỗi",
+        { description: `Không thể tải dữ liệu nhân viên: ${error.message}` }
+      );
       throw error;
     }
   };

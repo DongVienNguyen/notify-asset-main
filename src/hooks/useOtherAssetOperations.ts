@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAssetHistory } from '@/hooks/useAssetHistory';
@@ -95,7 +94,7 @@ export const useOtherAssetOperations = (user: any) => {
 
       const assetData = {
         name: newAsset.name.trim(),
-        deposit_date: newAsset.deposit_date,
+        deposit_date: newAsset.deposit_date || null, // Đảm bảo chuỗi rỗng được chuyển thành NULL
         depositor: newAsset.depositor?.trim() || null,
         deposit_receiver: newAsset.deposit_receiver?.trim() || null,
         withdrawal_date: newAsset.withdrawal_date || null,

@@ -10,7 +10,6 @@ const AssetEntryForm = () => {
   const {
     formData,
     setFormData,
-    message,
     isLoading,
     isRestrictedTime,
     multipleAssets,
@@ -23,8 +22,7 @@ const AssetEntryForm = () => {
     handleSubmit,
     handleTestEmail,
     clearForm,
-    user,
-    setMessage // Added setMessage here
+    user
   } = useAssetEntry();
 
   useEffect(() => {
@@ -51,11 +49,6 @@ const AssetEntryForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Function to update message state
-  const handleMessageUpdate = (type: 'success' | 'error', text: string, description?: string) => {
-    setMessage({ type, text: description ? `${text}: ${description}` : text });
-  };
-
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg border">
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -73,7 +66,6 @@ const AssetEntryForm = () => {
           onRemoveAssetField={removeAssetField}
           onAssetCodesDetected={handleAssetCodesDetected}
           onRoomDetected={handleRoomDetected}
-          onMessageUpdate={handleMessageUpdate} // Changed from showToast
         />
 
         <FormControls
@@ -90,12 +82,6 @@ const AssetEntryForm = () => {
             <AlertDescription className="text-orange-700">
               Hiện tại đang trong khung giờ cấm (7:45-8:05 hoặc 12:45-13:05). Vui lòng nhắn Zalo thay vì dùng hệ thống.
             </AlertDescription>
-          </Alert>
-        )}
-
-        {message.text && (
-          <Alert variant={message.type === 'error' ? 'destructive' : 'default'}>
-            <AlertDescription>{message.text}</AlertDescription>
           </Alert>
         )}
 

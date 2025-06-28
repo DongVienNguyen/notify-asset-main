@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ImageProcessingDialog from './ImageProcessingDialog';
 import { useImageProcessing } from '@/hooks/useImageProcessing';
+import { toast } from 'sonner'; // Import toast directly from sonner
 
 interface AssetCodeInputsProps {
   multipleAssets: string[];
@@ -13,7 +14,6 @@ interface AssetCodeInputsProps {
   onRemoveAssetField: (index: number) => void;
   onAssetCodesDetected: (codes: string[]) => void;
   onRoomDetected: (room: string) => void;
-  onMessageUpdate: (type: 'success' | 'error', text: string, description?: string) => void; // Changed from showToast
 }
 
 const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
@@ -23,7 +23,6 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
   onRemoveAssetField,
   onAssetCodesDetected,
   onRoomDetected,
-  onMessageUpdate // Changed from showToast
 }) => {
   const {
     isProcessingImage,
@@ -34,25 +33,20 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
   } = useImageProcessing({
     onAssetCodesDetected,
     onRoomDetected,
-    onMessageUpdate // Changed from showToast
   });
 
   const handleImageProcessed = (result: { assetCodes: string[]; room?: string }) => {
     if (result.assetCodes.length > 0) {
-      onAssetCodesDetected(result.assetCodes);
-      onMessageUpdate( // Changed to onMessageUpdate
-        "success",
+      toast.success(
         "Phát hiện mã tài sản thành công!",
-        `Đã tìm thấy ${result.assetCodes.length} mã tài sản`
+        { description: `Đã tìm thấy ${result.assetCodes.length} mã tài sản` }
       );
     }
     
     if (result.room) {
-      onRoomDetected(result.room);
-      onMessageUpdate( // Changed to onMessageUpdate
-        "success",
+      toast.success(
         "Phát hiện phòng thành công!",
-        `Đã tìm thấy phòng: ${result.room}`
+        { description: `Đã tìm thấy phòng: ${result.room}` }
       );
     }
   };

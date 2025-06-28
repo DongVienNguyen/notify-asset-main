@@ -51,3 +51,48 @@ export const formatToDDMMYYYY = (date: string | Date | undefined | null): string
     return '';
   }
 };
+
+// --- New Helper Functions for Daily Report ---
+
+/** Gets the current date in GMT+7 timezone. */
+export const getGMTPlus7Date = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+
+/**
+ * Calculates the next working day (skips Saturday and Sunday).
+ * @param date The starting date.
+ * @returns The next working day as a Date object.
+ */
+export const getNextWorkingDay = (date: Date): Date => {
+  const day = date.getDay();
+  let nextDay = new Date(date);
+  if (day === 5) nextDay.setDate(date.getDate() + 3); // Friday -> Monday
+  else if (day === 6) nextDay.setDate(date.getDate() + 2); // Saturday -> Monday
+  else nextDay.setDate(date.getDate() + 1);
+  return nextDay;
+};
+
+/**
+ * Determines the target date for the morning report based on the current time.
+ * If it's after 08:06 AM, it returns the next working day. Otherwise, it returns the current day.
+ * @returns The target date as a Date object.
+ */
+export const getDateBasedOnTime = (): Date => {
+  const gmtPlus7 = getGMTPlus7Date();
+  const hours = gmtPlus7.getHours();
+  const minutes = gmtPlus7.getMinutes();
+  const isAfter0806 = hours > 8 || (hours === 8 && minutes >= 6);
+  return isAfter0806 ? getNextWorkingDay(gmtPlus7) : gmtPlus7;
+};
+
+/**
+ * Calculates the default end date for custom filters, which is the next working day.
+ * @returns The default end date as a Date object.
+ */
+export const getDefaultEndDate = (): Date => {
+  const gmtPlus7 = getGMTPlus7Date();
+  const tomorrow = new Date(gmtPlus7);
+  tomorrow.setDate(gmtPlus7.getDate() + 1);
+  if (tomorrow.getDay() === 6) tomorrow.setDate(tomorrow.getDate() + 2); // If tomorrow is Saturday, set to Monday
+  else if (tomorrow.getDay() === 0) tomorrow.setDate(tomorrow.getDate() + 1); // If tomorrow is Sunday, set to Monday
+  return tomorrow;
+};

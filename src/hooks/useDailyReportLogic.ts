@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { getAssetTransactions, AssetTransactionFilters } from '@/services/assetService';
-import { formatToDDMMYYYY } from '@/utils/dateUtils';
+import { 
+  formatToDDMMYYYY,
+  getGMTPlus7Date,
+  getNextWorkingDay,
+  getDateBasedOnTime,
+  getDefaultEndDate
+} from '@/utils/dateUtils';
 
 interface Transaction {
   id: string;
@@ -15,35 +21,6 @@ interface Transaction {
   note: string;
   created_at?: string;
 }
-
-// Helper date functions
-const getGMTPlus7Date = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
-
-const getNextWorkingDay = (date: Date) => {
-  const day = date.getDay();
-  let nextDay = new Date(date);
-  if (day === 5) nextDay.setDate(date.getDate() + 3);
-  else if (day === 6) nextDay.setDate(date.getDate() + 2);
-  else nextDay.setDate(date.getDate() + 1);
-  return nextDay;
-};
-
-const getDateBasedOnTime = () => {
-  const gmtPlus7 = getGMTPlus7Date();
-  const hours = gmtPlus7.getHours();
-  const minutes = gmtPlus7.getMinutes();
-  const isAfter0806 = hours > 8 || (hours === 8 && minutes >= 6);
-  return isAfter0806 ? getNextWorkingDay(gmtPlus7) : gmtPlus7;
-};
-
-const getDefaultEndDate = () => {
-  const gmtPlus7 = getGMTPlus7Date();
-  const tomorrow = new Date(gmtPlus7);
-  tomorrow.setDate(gmtPlus7.getDate() + 1);
-  if (tomorrow.getDay() === 6) tomorrow.setDate(tomorrow.getDate() + 2);
-  else if (tomorrow.getDay() === 0) tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow;
-};
 
 export const useDailyReportLogic = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

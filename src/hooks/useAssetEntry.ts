@@ -24,7 +24,7 @@ export const useAssetEntry = () => {
     isLoading,
     handleSubmit: submitAssets,
     handleTestEmail,
-    showToast
+    setMessage // Thêm setMessage vào đây
   } = useAssetSubmission();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,30 +48,7 @@ export const useAssetEntry = () => {
     handleSubmit,
     handleTestEmail,
     clearForm,
-    showToast,
+    setMessage, // Trả về setMessage
     user
   };
-};
-
-const AssetEntryForm = () => {
-  const {
-    formData,
-    setFormData,
-    message,
-    isLoading,
-    isRestrictedTime,
-    multipleAssets,
-    setMultipleAssets,
-    isFormValid,
-    handleRoomChange,
-    handleAssetChange,
-    addAssetField,
-    removeAssetField,
-    handleSubmit,
-    handleTestEmail,
-    clearForm,
-    // showToast, // Removed showToast from here
-    user
-  } = useAssetEntry();
-  // ... existing code ...
 };

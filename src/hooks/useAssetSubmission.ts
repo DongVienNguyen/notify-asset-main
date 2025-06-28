@@ -156,6 +156,6 @@ export const useAssetSubmission = () => {
     isLoading,
     handleSubmit,
     handleTestEmail,
-    // showToast, // Now showToast is returned
+    setMessage, // Thêm setMessage vào đây
   };
 };

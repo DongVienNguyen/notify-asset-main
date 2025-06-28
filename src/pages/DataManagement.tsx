@@ -206,6 +206,7 @@ const DataManagement = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [statistics, setStatistics] = useState<any[]>([]);
+  const [staffTransactionStats, setStaffTransactionStats] = useState<{ name: string; count: number }[]>([]);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
@@ -240,14 +241,28 @@ const DataManagement = () => {
     }
   }, [selectedEntity]);
 
-  useEffect(() => { loadStatistics(); }, []);
+  useEffect(() => {
+    loadStatistics();
+    loadStaffTransactionStats();
+  }, []);
 
   const loadData = async () => {
     if (!selectedEntity) return;
     setIsLoading(true);
     try {
       const config = entityConfig[selectedEntity];
-      const { data: result, error } = await supabase.from(config.entity as any).select('*').order('created_at', { ascending: false });
+      const hasCreatedAt = config.fields.some(f => f.key === 'created_at');
+      
+      let query = supabase.from(config.entity as any).select('*');
+      
+      if (hasCreatedAt) {
+        query = query.order('created_at', { ascending: false });
+      } else {
+        query = query.order('id', { ascending: false });
+      }
+
+      const { data: result, error } = await query;
+
       if (error) throw error;
       setData(result || []);
     } catch (error: any) {
@@ -272,6 +287,40 @@ const DataManagement = () => {
     } catch (error: any) {
       console.error("Error loading statistics:", error.message);
       setMessage({ type: 'error', text: `Không thể tải thống kê: ${error.message}` });
+    }
+  };
+
+  const loadStaffTransactionStats = async () => {
+    try {
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('asset_transactions')
+        .select('staff_code');
+      if (transactionsError) throw transactionsError;
+
+      const { data: staff, error: staffError } = await supabase
+        .from('staff')
+        .select('username, staff_name');
+      if (staffError) throw staffError;
+
+      const staffNameMap = new Map(staff.map(s => [s.username, s.staff_name || s.username]));
+      
+      const transactionCounts = transactions.reduce((acc, transaction) => {
+        const staffCode = transaction.staff_code;
+        acc[staffCode] = (acc[staffCode] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const stats = Object.entries(transactionCounts)
+        .map(([staffCode, count]) => ({
+          name: staffNameMap.get(staffCode) || staffCode,
+          count: count,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      setStaffTransactionStats(stats);
+    } catch (error: any) {
+      console.error("Error loading staff transaction statistics:", error.message);
+      setMessage({ type: 'error', text: `Không thể tải thống kê giao dịch nhân viên: ${error.message}` });
     }
   };
 
@@ -669,7 +718,7 @@ const DataManagement = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="statistics" className="mt-6">
+          <TabsContent value="statistics" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Thống kê số lượng bản ghi</CardTitle>
@@ -691,6 +740,37 @@ const DataManagement = () => {
                 ) : (
                   <p>Không có dữ liệu thống kê.</p>
                 )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Thống kê giao dịch theo nhân viên</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tên nhân viên</TableHead>
+                      <TableHead className="text-right">Số lượng giao dịch</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {staffTransactionStats.length > 0 ? (
+                      staffTransactionStats.map((stat) => (
+                        <TableRow key={stat.name}>
+                          <TableCell className="font-medium">{stat.name}</TableCell>
+                          <TableCell className="text-right">{stat.count}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center">
+                          Không có dữ liệu thống kê.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

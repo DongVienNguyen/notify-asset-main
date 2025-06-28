@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { sendAssetNotificationEmail } from '@/services/emailService';
-import { isDateDueOrOverdue } from './dateUtils';
+import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Corrected import path
 import { getEmailTemplate } from './emailTemplates';
 import { getRecipients } from './recipientUtils';
 
@@ -35,7 +34,7 @@ export const sendSingleReminder = async (
   loadData: () => Promise<void>
 ) => {
   try {
-    if (!isDateDueOrOverdue(reminder.ngay_den_han)) {
+    if (!isDayMonthDueOrOverdue(reminder.ngay_den_han)) {
       toast({
         title: "Thông báo",
         description: "Nhắc nhở tài sản này chưa đến hạn",

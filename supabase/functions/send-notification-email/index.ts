@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -43,7 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Prepare email data
     const emailData: any = {
-      from: "Hệ thống Tài sản <onboarding@resend.dev>", // Sử dụng địa chỉ mặc định của Resend
+      from: "Hệ thống Tài sản <taisan@caremylife.me>",
       to: to,
       subject: subject,
       html: html,

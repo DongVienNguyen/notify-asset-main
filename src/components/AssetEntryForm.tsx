@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import AssetCodeInputs from './AssetCodeInputs';
-import FormControls from './FormControls';
+import RoomSelection from './RoomSelection';
+import TransactionDetails from './TransactionDetails';
 import SubmitButtons from './SubmitButtons';
 import { useAssetEntry } from '@/hooks/useAssetEntry';
 
@@ -52,11 +53,10 @@ const AssetEntryForm = () => {
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg border">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <FormControls
+        <RoomSelection
           formData={formData}
           onRoomChange={handleRoomChange}
           onFormDataChange={handleFormDataChange}
-          showAssetInputs={false}
         />
 
         <AssetCodeInputs
@@ -68,11 +68,9 @@ const AssetEntryForm = () => {
           onRoomDetected={handleRoomDetected}
         />
 
-        <FormControls
+        <TransactionDetails
           formData={formData}
-          onRoomChange={handleRoomChange}
           onFormDataChange={handleFormDataChange}
-          showAssetInputs={true}
         />
 
         {/* Alerts */}

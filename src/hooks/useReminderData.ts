@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner'; // Changed from '@/hooks/use-toast'
 
 // Asset Reminder interface
 interface AssetReminder {
@@ -29,7 +28,7 @@ interface SentAssetReminder {
 export const useReminderData = () => {
   const [reminders, setReminders] = useState<AssetReminder[]>([]);
   const [sentReminders, setSentReminders] = useState<SentAssetReminder[]>([]);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
 
   const loadReminderData = async () => {
     try {
@@ -71,11 +70,10 @@ export const useReminderData = () => {
       console.error('Error loading reminder data:', error);
       setReminders([]);
       setSentReminders([]);
-      toast({
-        title: "Lỗi",
-        description: `Không thể tải dữ liệu nhắc nhở: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error( // Changed from toast({ ... })
+        "Không thể tải dữ liệu nhắc nhở",
+        { description: error.message }
+      );
       throw error;
     }
   };

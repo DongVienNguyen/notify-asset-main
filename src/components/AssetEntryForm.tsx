@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,8 +23,8 @@ const AssetEntryForm = () => {
     handleSubmit,
     handleTestEmail,
     clearForm,
-    showToast,
-    user
+    user,
+    setMessage // Added setMessage here
   } = useAssetEntry();
 
   useEffect(() => {
@@ -52,6 +51,11 @@ const AssetEntryForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Function to update message state
+  const handleMessageUpdate = (type: 'success' | 'error', text: string, description?: string) => {
+    setMessage({ type, text: description ? `${text}: ${description}` : text });
+  };
+
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg border">
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -69,7 +73,7 @@ const AssetEntryForm = () => {
           onRemoveAssetField={removeAssetField}
           onAssetCodesDetected={handleAssetCodesDetected}
           onRoomDetected={handleRoomDetected}
-          showToast={showToast}
+          onMessageUpdate={handleMessageUpdate} // Changed from showToast
         />
 
         <FormControls

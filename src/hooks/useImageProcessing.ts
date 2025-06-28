@@ -1,14 +1,13 @@
-
 import { useState } from 'react';
 import { analyzeImageWithGemini, GeminiAnalysisResult } from '@/services/geminiService';
 
 interface UseImageProcessingProps {
   onAssetCodesDetected: (codes: string[]) => void;
   onRoomDetected: (room: string) => void;
-  showToast: (title: string, description?: string, variant?: 'default' | 'destructive') => void;
+  onMessageUpdate: (type: 'success' | 'error', text: string, description?: string) => void; // Changed from showToast
 }
 
-export const useImageProcessing = ({ onAssetCodesDetected, onRoomDetected, showToast }: UseImageProcessingProps) => {
+export const useImageProcessing = ({ onAssetCodesDetected, onRoomDetected, onMessageUpdate }: UseImageProcessingProps) => {
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -48,25 +47,26 @@ export const useImageProcessing = ({ onAssetCodesDetected, onRoomDetected, showT
         }
         
         // Hiển thị thông báo thành công
-        showToast(
+        onMessageUpdate( // Changed to onMessageUpdate
+          "success",
           "Đã điền " + result.assetCodes.length + " mã tài sản",
           `Các mã tài sản: ${result.assetCodes.join(', ')}`
         );
         
       } else {
-        showToast(
+        onMessageUpdate( // Changed to onMessageUpdate
+          "error",
           "Không tìm thấy mã tài sản",
-          "Không thể nhận dạng mã tài sản trong hình ảnh. Vui lòng thử lại hoặc nhập thủ công.",
-          "destructive"
+          "Không thể nhận dạng mã tài sản trong hình ảnh. Vui lòng thử lại hoặc nhập thủ công."
         );
       }
       
     } catch (error) {
       console.error('Error processing image:', error);
-      showToast(
+      onMessageUpdate( // Changed to onMessageUpdate
+        "error",
         "Lỗi phân tích hình ảnh",
-        error instanceof Error ? error.message : 'Có lỗi xảy ra khi phân tích hình ảnh',
-        "destructive"
+        error instanceof Error ? error.message : 'Có lỗi xảy ra khi phân tích hình ảnh'
       );
     } finally {
       setIsProcessingImage(false);

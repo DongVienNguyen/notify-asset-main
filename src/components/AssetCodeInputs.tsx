@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Plus, Minus, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ interface AssetCodeInputsProps {
   onRemoveAssetField: (index: number) => void;
   onAssetCodesDetected: (codes: string[]) => void;
   onRoomDetected: (room: string) => void;
-  showToast: (title: string, description?: string, variant?: 'default' | 'destructive') => void;
+  onMessageUpdate: (type: 'success' | 'error', text: string, description?: string) => void; // Changed from showToast
 }
 
 const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
@@ -24,7 +23,7 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
   onRemoveAssetField,
   onAssetCodesDetected,
   onRoomDetected,
-  showToast
+  onMessageUpdate // Changed from showToast
 }) => {
   const {
     isProcessingImage,
@@ -35,13 +34,14 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
   } = useImageProcessing({
     onAssetCodesDetected,
     onRoomDetected,
-    showToast
+    onMessageUpdate // Changed from showToast
   });
 
   const handleImageProcessed = (result: { assetCodes: string[]; room?: string }) => {
     if (result.assetCodes.length > 0) {
       onAssetCodesDetected(result.assetCodes);
-      showToast(
+      onMessageUpdate( // Changed to onMessageUpdate
+        "success",
         "Phát hiện mã tài sản thành công!",
         `Đã tìm thấy ${result.assetCodes.length} mã tài sản`
       );
@@ -49,7 +49,8 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
     
     if (result.room) {
       onRoomDetected(result.room);
-      showToast(
+      onMessageUpdate( // Changed to onMessageUpdate
+        "success",
         "Phát hiện phòng thành công!",
         `Đã tìm thấy phòng: ${result.room}`
       );

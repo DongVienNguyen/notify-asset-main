@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ImageProcessingDialog from './ImageProcessingDialog';
 import { useImageProcessing } from '@/hooks/useImageProcessing';
-import { toast } from 'sonner'; // Import toast directly from sonner
+import { toast } from 'sonner';
 
 interface AssetCodeInputsProps {
   multipleAssets: string[];
@@ -29,7 +29,6 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
     isDialogOpen,
     setIsDialogOpen,
     processImages,
-    openCamera
   } = useImageProcessing({
     onAssetCodesDetected,
     onRoomDetected,
@@ -87,8 +86,8 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
           isProcessingImage={isProcessingImage}
           isDialogOpen={isDialogOpen}
           setIsDialogOpen={setIsDialogOpen}
-          openCamera={handleOpenCamera} // Use the new handler
-          processImages={handleProcessImages} // Use the new handler
+          onCameraClick={handleOpenCamera} // Updated prop name
+          onUploadClick={handleProcessImages} // Updated prop name
         />
       </div>
       

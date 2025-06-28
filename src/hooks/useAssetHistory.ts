@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
 
 interface AssetHistory {
   id: string;
@@ -17,7 +16,6 @@ interface AssetHistory {
 
 export const useAssetHistory = (user: any) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   // Save history record to the independent archive table
   const saveHistory = async (historyRecord: {
@@ -74,10 +72,8 @@ export const useAssetHistory = (user: any) => {
       
       // Don't show error toast for delete operations to avoid annoying user
       if (historyRecord.change_type !== 'delete') {
-        toast({
-          title: "Cảnh báo",
+        toast.error("Cảnh báo", { // Changed toast call
           description: "Không thể lưu lịch sử thay đổi",
-          variant: "destructive",
         });
       }
       

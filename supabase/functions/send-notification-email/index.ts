@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -44,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Prepare email data
     const emailData: any = {
-      from: "Hệ thống Tài sản <taisan@caremylife.me>",
+      from: "Hệ thống Tài sản <onboarding@resend.dev>",
       to: to,
       subject: subject,
       html: html,
@@ -55,7 +54,6 @@ const handler = async (req: Request): Promise<Response> => {
       emailData.attachments = attachments.map(att => ({
         filename: att.filename,
         content: att.content,
-        type: att.encoding === 'base64' ? 'image/jpeg' : 'text/plain',
       }));
     }
 

@@ -1,9 +1,7 @@
 import { useToast } from '@/hooks/use-toast';
-import { sendAssetNotificationEmail } from '@/services/emailService';
-import { supabase } from '@/integrations/supabase/client';
-import { getEmailTemplate } from './emailTemplates';
-import { getRecipients } from './recipientUtils';
-import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Updated import
+import { isDayMonthDueOrOverdue } from '@/utils/dateUtils';
+import { sendSingleReminder as sendSingleReminderOperation } from './singleReminderOperations';
+import { sendReminders as sendRemindersOperation } from './bulkReminderOperations';
 
 // Asset Reminder interface
 interface AssetReminder {

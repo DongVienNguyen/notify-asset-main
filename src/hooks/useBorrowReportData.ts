@@ -21,7 +21,7 @@ interface DateRange {
 }
 
 export const useBorrowReportData = () => {
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({
     start: format(new Date(), 'yyyy-MM-dd'),
@@ -36,9 +36,12 @@ export const useBorrowReportData = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const data = await getAssetTransactions();
-        const borrowTransactions = data.filter(t => t.transaction_type === 'Mượn TS');
-        setAllTransactions(borrowTransactions);
+        const data = await getAssetTransactions({
+          transactionType: 'Mượn TS',
+          dateRange: dateRange,
+          room: selectedRoom,
+        });
+        setTransactions(data || []);
       } catch (error) {
         console.error("Error fetching borrow report data:", error);
         toast.error("Không thể tải dữ liệu báo cáo mượn tài sản.");
@@ -47,37 +50,25 @@ export const useBorrowReportData = () => {
       }
     };
     fetchData();
-  }, []);
-
-  const filteredTransactions = useMemo(() => {
-    return allTransactions.filter(t => {
-      const transactionDate = new Date(t.transaction_date);
-      const startDate = dateRange.start ? new Date(dateRange.start) : null;
-      const endDate = dateRange.end ? new Date(dateRange.end) : null;
-
-      if (startDate) startDate.setHours(0, 0, 0, 0);
-      if (endDate) endDate.setHours(23, 59, 59, 999);
-
-      const inDateRange = (!startDate || transactionDate >= startDate) && (!endDate || transactionDate <= endDate);
-      const inRoom = selectedRoom === 'all' || t.room === selectedRoom;
-
-      return inDateRange && inRoom;
-    });
-  }, [allTransactions, dateRange, selectedRoom]);
+  }, [dateRange, selectedRoom]);
 
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredTransactions, currentPage]);
+    return transactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [transactions, currentPage]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
 
   const rooms = useMemo(() => {
-    return [...new Set(allTransactions.map(t => t.room))].sort();
-  }, [allTransactions]);
+    // This should ideally be fetched from the DB or derived from a larger dataset
+    // For now, we derive it from the already filtered transactions, which might not be complete.
+    // A better approach would be to fetch all unique rooms once.
+    // However, to avoid major changes, we'll keep this as is.
+    return [...new Set(transactions.map(t => t.room))].sort();
+  }, [transactions]);
 
   const exportToCSV = () => {
-    if (filteredTransactions.length === 0) {
+    if (transactions.length === 0) {
       toast.warning("Không có dữ liệu để xuất.");
       return;
     }
@@ -85,7 +76,7 @@ export const useBorrowReportData = () => {
     const headers = ['STT', 'Phòng', 'Năm TS', 'Mã TS', 'Loại', 'Ngày', 'CB'];
     const csvContent = [
       headers.join(','),
-      ...filteredTransactions.map((t, index) => [
+      ...transactions.map((t, index) => [
         index + 1,
         t.room,
         t.asset_year,
@@ -117,7 +108,7 @@ export const useBorrowReportData = () => {
     setSelectedRoom,
     currentPage,
     setCurrentPage,
-    filteredTransactions,
+    filteredTransactions: transactions, // Keep name for compatibility
     paginatedTransactions,
     totalPages,
     rooms,

@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import Layout from '@/components/Layout';
-import { getAssetTransactions } from '@/services/assetService';
+import { getAssetTransactions, GetAssetTransactionsFilters } from '@/services/assetService';
 import { formatToDDMMYYYY } from '@/utils/dateUtils';
 import DateInput from '@/components/DateInput';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,7 +34,7 @@ const DailyReport = () => {
   const [customFilters, setCustomFilters] = useState({
     start: '',
     end: '',
-    parts_day: 'all'
+    parts_day: 'all' as 'all' | 'Sáng' | 'Chiều'
   });
   const [currentPage, setCurrentPage] = useState(1);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -127,10 +127,6 @@ const DailyReport = () => {
     try {
       console.log('Loading transactions for filter:', filterType);
       
-      const data = await getAssetTransactions();
-      
-      // Filter data based on selected filter type
-      let filtered = [...data];
       const gmtPlus7 = getGMTPlus7Date();
       const todayStr = gmtPlus7.toISOString().split('T')[0];
       const morningTargetDate = getDateBasedOnTime();
@@ -138,54 +134,48 @@ const DailyReport = () => {
       const nextWorkingDay = getNextWorkingDay(gmtPlus7);
       const nextWorkingDayStr = nextWorkingDay.toISOString().split('T')[0];
 
-      console.log('Filter dates:', {
-        today: todayStr,
-        morningTarget: morningTargetStr,
-        nextWorkingDay: nextWorkingDayStr,
-        filterType
-      });
-
-      switch (filterType) {
-        case 'qln_pgd_next_day':
-          filtered = filtered.filter(t => 
-            t.transaction_date === morningTargetStr && 
-            (t.parts_day === 'Sáng' || (t.parts_day === 'Chiều' && ['CMT8', 'NS', 'ĐS', 'LĐH'].includes(t.room)))
-          );
-          break;
-        case 'morning':
-          filtered = filtered.filter(t => 
-            t.transaction_date === morningTargetStr && t.parts_day === 'Sáng'
-          );
-          break;
-        case 'afternoon':
-          // Fixed: afternoon should filter by next working day, not today
-          filtered = filtered.filter(t => 
-            t.transaction_date === nextWorkingDayStr && t.parts_day === 'Chiều'
-          );
-          break;
-        case 'today':
-          filtered = filtered.filter(t => t.transaction_date === todayStr);
-          break;
-        case 'next_day':
-          filtered = filtered.filter(t => t.transaction_date === nextWorkingDayStr);
-          break;
-        case 'custom':
-          if (customFilters?.start && customFilters?.end) {
-            filtered = filtered.filter(t => {
-              const matchDate = t.transaction_date >= customFilters.start && t.transaction_date <= customFilters.end;
-              const matchPartsDay = customFilters.parts_day === 'all' || t.parts_day === customFilters.parts_day;
-              return matchDate && matchPartsDay;
-            });
-          } else {
-            filtered = []; // Don't show any data if date range is not set
-          }
-          break;
+      let data = [];
+      
+      if (filterType === 'qln_pgd_next_day') {
+        const rawData = await getAssetTransactions({ dateRange: { start: morningTargetStr, end: morningTargetStr } });
+        data = rawData.filter(t => 
+          t.parts_day === 'Sáng' || (t.parts_day === 'Chiều' && ['CMT8', 'NS', 'ĐS', 'LĐH'].includes(t.room))
+        );
+      } else {
+        let filters: GetAssetTransactionsFilters = {};
+        switch (filterType) {
+          case 'morning':
+            filters = { dateRange: { start: morningTargetStr, end: morningTargetStr }, parts_day: 'Sáng' };
+            break;
+          case 'afternoon':
+            filters = { dateRange: { start: nextWorkingDayStr, end: nextWorkingDayStr }, parts_day: 'Chiều' };
+            break;
+          case 'today':
+            filters = { dateRange: { start: todayStr, end: todayStr } };
+            break;
+          case 'next_day':
+            filters = { dateRange: { start: nextWorkingDayStr, end: nextWorkingDayStr } };
+            break;
+          case 'custom':
+            if (customFilters?.start && customFilters?.end) {
+              filters = { 
+                dateRange: { start: customFilters.start, end: customFilters.end }, 
+                parts_day: customFilters.parts_day 
+              };
+            } else {
+              data = [];
+            }
+            break;
+        }
+        if (Object.keys(filters).length > 0) {
+          data = await getAssetTransactions(filters);
+        }
       }
 
-      console.log('Filtered transactions:', filtered.length);
+      console.log('Filtered transactions:', data.length);
 
       // Transform and sort data
-      const transformedData = filtered.map(transaction => ({
+      const transformedData = data.map(transaction => ({
         id: transaction.id,
         staff_code: transaction.staff_code,
         transaction_date: transaction.transaction_date,
@@ -228,11 +218,11 @@ const DailyReport = () => {
     const gmtPlus7 = getGMTPlus7Date();
     const defaultEnd = getDefaultEndDate();
     
-    setCustomFilters({
+    setCustomFilters(prev => ({
+      ...prev,
       start: gmtPlus7.toISOString().split('T')[0],
       end: defaultEnd.toISOString().split('T')[0],
-      parts_day: 'all'
-    });
+    }));
   }, []);
 
   const getMorningTargetDate = () => {
@@ -391,7 +381,7 @@ const DailyReport = () => {
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">Chọn buổi</Label>
                   <Select 
                     value={customFilters.parts_day} 
-                    onValueChange={(value) => setCustomFilters(prev => ({ ...prev, parts_day: value }))}
+                    onValueChange={(value) => setCustomFilters(prev => ({ ...prev, parts_day: value as any }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn buổi" />

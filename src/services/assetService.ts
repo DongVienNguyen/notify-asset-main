@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { validateInput } from '@/utils/inputValidation';
 import { logSecurityEvent } from '@/utils/secureAuthUtils';
@@ -57,31 +56,57 @@ export const saveAssetTransactions = async (transactions: AssetTransaction[]) =>
   }
 };
 
-export const getAssetTransactions = async (staffCode?: string) => {
+export interface GetAssetTransactionsFilters {
+  staffCode?: string;
+  dateRange?: { start: string; end: string };
+  room?: string;
+  transactionType?: string;
+  parts_day?: 'Sáng' | 'Chiều' | 'all';
+}
+
+export const getAssetTransactions = async (filters: GetAssetTransactionsFilters = {}) => {
   try {
     let query = supabase
       .from('asset_transactions')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (staffCode) {
-      // Validate staff code
-      if (!validateInput.isValidUsername(staffCode)) {
+    if (filters.staffCode) {
+      if (!validateInput.isValidUsername(filters.staffCode)) {
         throw new Error('Mã nhân viên không hợp lệ');
       }
-      query = query.eq('staff_code', validateInput.sanitizeString(staffCode));
+      query = query.eq('staff_code', validateInput.sanitizeString(filters.staffCode));
+    }
+
+    if (filters.dateRange?.start) {
+      query = query.gte('transaction_date', filters.dateRange.start);
+    }
+    if (filters.dateRange?.end) {
+      query = query.lte('transaction_date', filters.dateRange.end);
+    }
+
+    if (filters.room && filters.room !== 'all') {
+      query = query.eq('room', filters.room);
+    }
+    
+    if (filters.transactionType) {
+      query = query.eq('transaction_type', filters.transactionType);
+    }
+
+    if (filters.parts_day && filters.parts_day !== 'all') {
+      query = query.eq('parts_day', filters.parts_day);
     }
 
     const { data, error } = await query;
 
     if (error) {
-      logSecurityEvent('ASSET_TRANSACTION_FETCH_ERROR', { error: error.message });
+      logSecurityEvent('ASSET_TRANSACTION_FETCH_ERROR', { error: error.message, filters });
       throw error;
     }
 
     return data;
   } catch (error) {
-    logSecurityEvent('ASSET_TRANSACTION_FETCH_EXCEPTION', { error: (error as Error).message });
+    logSecurityEvent('ASSET_TRANSACTION_FETCH_EXCEPTION', { error: (error as Error).message, filters });
     throw error;
   }
 };

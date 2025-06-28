@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Plus, Minus, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,24 +36,6 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
     onRoomDetected,
     showToast
   });
-
-  const handleImageProcessed = (result: { assetCodes: string[]; room?: string }) => {
-    if (result.assetCodes.length > 0) {
-      onAssetCodesDetected(result.assetCodes);
-      showToast(
-        "Phát hiện mã tài sản thành công!",
-        `Đã tìm thấy ${result.assetCodes.length} mã tài sản`
-      );
-    }
-    
-    if (result.room) {
-      onRoomDetected(result.room);
-      showToast(
-        "Phát hiện phòng thành công!",
-        `Đã tìm thấy phòng: ${result.room}`
-      );
-    }
-  };
 
   return (
     <div className="space-y-4">

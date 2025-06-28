@@ -9,7 +9,7 @@ interface StaffMember {
 }
 
 interface CRCReminder {
-  id: string;
+  id:string;
   loai_bt_crc: string;
   ngay_thuc_hien: string;
   ldpcrc: string | null;
@@ -115,9 +115,9 @@ export const useCRCData = () => {
         error: null
       });
 
-      // Show success message
-      const totalStaff = staff.ldpcrc.length + staff.cbcrc.length + staff.quycrc.length;
-      toast.success(`Đã tải ${totalStaff} cán bộ CRC, ${reminders.length} nhắc nhở, ${sentReminders.length} đã gửi`);
+      // Show success message - REMOVED
+      // const totalStaff = staff.ldpcrc.length + staff.cbcrc.length + staff.quycrc.length;
+      // toast.success(`Đã tải ${totalStaff} cán bộ CRC, ${reminders.length} nhắc nhở, ${sentReminders.length} đã gửi`);
 
     } catch (error) {
       console.error('💥 Critical error loading CRC data:', error);
@@ -131,7 +131,7 @@ export const useCRCData = () => {
 
       toast.error(`Không thể tải dữ liệu CRC: ${errorMessage}`);
     }
-  }, [toast]);
+  }, []);
 
   const refreshData = useCallback(() => {
     console.log('🔄 Refreshing CRC data...');
@@ -167,7 +167,7 @@ export const useCRCData = () => {
       console.error('💥 Connection test failed:', error);
       toast.error("Kiểm tra console để xem lỗi");
     }
-  }, [toast]);
+  }, []);
 
   return {
     ...data,

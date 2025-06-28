@@ -9,6 +9,8 @@ import { LoginHeader } from '@/components/LoginHeader';
 import { LoginForm } from '@/components/LoginForm';
 import { AccountLockedMessage } from '@/components/AccountLockedMessage';
 import { DemoCredentials } from '@/components/DemoCredentials';
+import { useDebounce } from '@/hooks/useDebounce';
+import { checkAccountStatus } from '@/services/secureAuthService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,40 +20,36 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAccountLocked, setIsAccountLocked] = useState(false);
   const [showForm, setShowForm] = useState(true);
+  const debouncedUsername = useDebounce(credentials.username, 500);
 
-  // Test database connection on component mount (can keep this as a general health check)
   useEffect(() => {
-    const testDatabaseConnection = async () => {
-      try {
-        console.log('🔍 Testing database connection...');
-        // This is a simple count, less likely to hit RLS issues than full select,
-        // but still good to monitor.
-        const { data, error } = await supabase
-          .from('staff')
-          .select('count')
-          .limit(1);
-        
-        console.log('📊 Database connection test result:', { data, error });
-        
-        if (error) {
-          console.error('❌ Database connection failed:', error);
-          setError('Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.');
-        } else {
-          console.log('✅ Database connection successful');
-        }
-      } catch (err) {
-        console.error('💥 Database connection exception:', err);
-        setError('Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau.');
+    const verifyAccountStatus = async () => {
+      if (!debouncedUsername) {
+        if (isAccountLocked) handleTryAnotherAccount();
+        return;
+      }
+      
+      const { isLocked, error: checkError } = await checkAccountStatus(debouncedUsername);
+
+      if (checkError) {
+        console.error('Status check failed:', checkError);
+        return;
+      }
+
+      if (isLocked) {
+        setError('Tài khoản của bạn đã bị khóa. Hãy liên hệ Admin để được mở khóa.');
+        setIsAccountLocked(true);
+        setShowForm(false);
+      } else {
+        if (isAccountLocked) handleTryAnotherAccount();
       }
     };
 
-    testDatabaseConnection();
-  }, []);
+    verifyAccountStatus();
+  }, [debouncedUsername]);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      console.log('🔄 User already logged in, redirecting...', user);
       if (user.department === "NQ") {
         navigate('/daily-report');
       } else {
@@ -60,38 +58,22 @@ const Login = () => {
     }
   }, [user, loading, navigate]);
 
-  // Removed the checkAccountStatus useEffect and function
-  // The login function (via Edge Function) will handle account locking status
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    setIsAccountLocked(false); // Reset lock status on new attempt
-    setShowForm(true); // Always show form initially for new attempt
-
-    console.log('🚀 Login form submitted for:', credentials.username);
-    console.log('🔍 Form data:', { 
-      username: credentials.username, 
-      passwordLength: credentials.password.length 
-    });
+    setIsAccountLocked(false);
+    setShowForm(true);
 
     try {
       const result = await login(credentials.username.toLowerCase().trim(), credentials.password);
       
-      console.log('📝 Login attempt result:', result);
-      
       if (result.error) {
         setError(result.error);
-        
-        // Check if account was locked based on the error message from the Edge Function
         if (typeof result.error === 'string' && result.error.includes('khóa')) {
           setIsAccountLocked(true);
           setShowForm(false);
         }
-      } else {
-        console.log('🎉 Login successful, navigation will be handled by useEffect');
-        // Login successful, navigation will be handled by useEffect
       }
     } catch (error) {
       console.error('💥 Login submit error:', error);
@@ -102,14 +84,12 @@ const Login = () => {
   };
 
   const handleTryAnotherAccount = () => {
-    console.log('🔄 Trying another account');
     setCredentials({ username: '', password: '' });
     setShowForm(true);
     setIsAccountLocked(false);
     setError('');
   };
 
-  // Show loading while checking auth state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -131,7 +111,7 @@ const Login = () => {
             <CardTitle className="text-xl text-center">Thông tin đăng nhập</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {error && (
+            {error && showForm && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>

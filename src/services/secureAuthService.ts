@@ -1,52 +1,50 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Staff, LoginResult } from '@/types/auth';
-import { validateInput } from '@/utils/inputValidation';
-import { sanitizeUserForClient, checkRateLimit, logSecurityEvent } from '@/utils/secureAuthUtils';
+import { Staff } from '@/types/auth';
 
-// This function will now call the Edge Function for login
 export const secureLoginUser = async (username: string, password: string): Promise<{ user: Staff | null; error: string | null }> => {
-  // Input validation (client-side pre-check)
-  if (!validateInput.isValidUsername(username)) {
-    logSecurityEvent('INVALID_USERNAME_ATTEMPT', { username: username.slice(0, 10) });
-    return { user: null, error: 'Tên đăng nhập không hợp lệ' };
-  }
-
-  // Rate limiting (client-side pre-check, actual rate limiting will be on Edge Function too)
-  if (!checkRateLimit(`auth_${username}`, 5, 15 * 60 * 1000)) {
-    logSecurityEvent('RATE_LIMIT_EXCEEDED', { username });
-    return { user: null, error: 'Quá nhiều lần thử. Vui lòng thử lại sau 15 phút' };
-  }
-
   try {
-    const normalizedUsername = validateInput.sanitizeString(username.toLowerCase().trim());
-    
-    // Call the login-user Edge Function
-    const { data, error: invokeError } = await supabase.functions.invoke('login-user', {
-      body: { username: normalizedUsername, password: password }
+    const { data, error } = await supabase.functions.invoke('login-user', {
+      body: { username, password },
     });
 
-    if (invokeError) {
-      logSecurityEvent('EDGE_FUNCTION_INVOKE_ERROR', { error: invokeError.message });
-      return { user: null, error: 'Lỗi kết nối máy chủ' };
+    if (error) {
+      console.error('Error invoking login function:', error);
+      return { user: null, error: 'Không thể kết nối đến máy chủ xác thực.' };
     }
 
-    if (data && data.success) {
-      logSecurityEvent('LOGIN_SUCCESS', { username: normalizedUsername });
-      return { user: sanitizeUserForClient(data.user), error: null };
-    } else {
-      logSecurityEvent('LOGIN_FAILED_EDGE_FUNCTION', { username: normalizedUsername, error: data?.error });
-      return { user: null, error: data?.error || 'Đăng nhập thất bại' };
+    if (!data.success) {
+      return { user: null, error: data.error || 'Tên đăng nhập hoặc mật khẩu không đúng' };
     }
-  } catch (error) {
-    logSecurityEvent('LOGIN_EDGE_FUNCTION_EXCEPTION', { error: (error as Error).message });
-    return { user: null, error: 'Đã xảy ra lỗi trong quá trình đăng nhập' };
+
+    return { user: data.user, error: null };
+  } catch (err) {
+    console.error('Exception during login:', err);
+    return { user: null, error: 'Đã xảy ra lỗi không mong muốn.' };
   }
 };
 
-// These functions are no longer needed on the client-side as their logic is in the Edge Function
-// export const secureValidatePassword = async (password: string, storedPassword: string): Promise<boolean> => { /* ... */ };
-// export const secureHandleFailedLogin = async (username: string, currentAttempts: number = 0): Promise<LoginResult> => { /* ... */ };
-// export const secureResetFailedLoginAttempts = async (username: string): Promise<void> => { /* ... */ };
+export const checkAccountStatus = async (username: string): Promise<{ isLocked: boolean; error: string | null }> => {
+  if (!username) {
+    return { isLocked: false, error: null };
+  }
+  try {
+    const { data, error } = await supabase.functions.invoke('check-account-status', {
+      body: { username },
+    });
 
-// Keep sanitizeUserForClient if it's used elsewhere for client-side data
-export { sanitizeUserForClient } from '@/utils/secureAuthUtils';
+    if (error) {
+      console.error('Error invoking check-account-status function:', error);
+      return { isLocked: false, error: 'Không thể kiểm tra trạng thái tài khoản.' };
+    }
+
+    if (data.error) {
+       console.error('Function returned error:', data.error);
+       return { isLocked: false, error: data.error };
+    }
+
+    return { isLocked: data.isLocked, error: null };
+  } catch (err) {
+    console.error('Exception checking account status:', err);
+    return { isLocked: false, error: 'Lỗi hệ thống khi kiểm tra tài khoản.' };
+  }
+};

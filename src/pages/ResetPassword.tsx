@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Mail, ArrowLeft } from 'lucide-react';
@@ -15,7 +14,6 @@ const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Convert to lowercase and trim whitespace for consistent handling
     const value = e.target.value.toLowerCase().trim();
     setEmail(value);
   };
@@ -26,7 +24,6 @@ const ResetPassword = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Validate email format
       if (!email.endsWith('.hvu@vietcombank.com.vn')) {
         setMessage({
           type: 'error',
@@ -36,22 +33,15 @@ const ResetPassword = () => {
         return;
       }
 
-      // Extract username from email (case-insensitive)
       const username = email.replace('.hvu@vietcombank.com.vn', '');
       
-      console.log('🔍 Looking for staff with username:', username);
-      
-      // Check if staff exists using case-insensitive search
       const { data: staff, error: dbError } = await supabase
         .from('staff')
-        .select('username')
+        .select('username, account_status')
         .ilike('username', username)
         .maybeSingle();
 
-      console.log('📊 Staff lookup result:', { staff, error: dbError });
-
       if (dbError) {
-        console.error('❌ Database error:', dbError);
         setMessage({
           type: 'error',
           text: 'Đã xảy ra lỗi trong quá trình kiểm tra thông tin'
@@ -69,10 +59,18 @@ const ResetPassword = () => {
         return;
       }
 
+      if (staff.account_status === 'locked') {
+        setMessage({
+          type: 'error',
+          text: 'Tài khoản này đã bị khóa và không thể đặt lại mật khẩu. Vui lòng liên hệ Admin.'
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // Generate new password
       const newPassword = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Simulate sending email (in real app, this would call Supabase edge function)
       console.log('Sending email to:', email);
       console.log('New password:', newPassword);
 
@@ -81,7 +79,6 @@ const ResetPassword = () => {
         text: 'Mật khẩu mới đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.'
       });
 
-      // Reset form
       setEmail('');
     } catch (error) {
       console.error('💥 Reset password error:', error);

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import bcrypt from 'npm:bcryptjs@2.4.3'; // Import bcryptjs
+import bcrypt from 'npm:bcryptjs@2.4.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,14 +22,12 @@ serve(async (req) => {
       });
     }
 
-    // Create a Supabase client with the service role key to bypass RLS
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find the staff member (case-insensitive)
-    const { data: staff, error: fetchError } = await supabaseAdmin
+    let { data: staff, error: fetchError } = await supabaseAdmin
       .from('staff')
       .select('*')
       .ilike('username', username.toLowerCase().trim())
@@ -45,33 +43,50 @@ serve(async (req) => {
 
     if (!staff) {
       console.log('Login attempt for non-existent user:', username);
-      // To prevent username enumeration, return a generic error
       return new Response(JSON.stringify({ success: false, error: 'Tên đăng nhập hoặc mật khẩu không đúng' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
-    // Check if account is locked
+    // Reset failed attempts if the last attempt was more than 24 hours ago
+    if (staff.last_failed_login) {
+      const lastAttemptDate = new Date(staff.last_failed_login);
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      
+      if (lastAttemptDate < twentyFourHoursAgo) {
+        const { data: updatedStaff, error: resetError } = await supabaseAdmin
+          .from('staff')
+          .update({ failed_login_attempts: 0 })
+          .eq('id', staff.id)
+          .select()
+          .single();
+        
+        if (resetError) {
+          console.error('Error resetting failed login attempts due to time:', resetError);
+        }
+        if (updatedStaff) {
+          staff = updatedStaff;
+        }
+      }
+    }
+
     if (staff.account_status === 'locked') {
       console.log('Locked account login attempt:', username);
-      return new Response(JSON.stringify({ success: false, error: 'Tài khoản đã bị khóa' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Tài khoản của bạn đã bị khóa. Hãy liên hệ Admin để được mở khóa.' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
-    // Validate password
     const isPasswordValid = await bcrypt.compare(password, staff.password);
 
     if (!isPasswordValid) {
-      // Handle failed login attempt
       const newAttempts = (staff.failed_login_attempts || 0) + 1;
       let updateError = null;
       let errorMessage = 'Tên đăng nhập hoặc mật khẩu không đúng';
 
       if (newAttempts >= 3) {
-        // Lock account
         const { error } = await supabaseAdmin
           .from('staff')
           .update({
@@ -82,9 +97,8 @@ serve(async (req) => {
           })
           .eq('id', staff.id);
         updateError = error;
-        errorMessage = 'Tài khoản đã bị khóa do nhập sai mật khẩu quá nhiều lần';
+        errorMessage = 'Tài khoản đã bị khóa do nhập sai mật khẩu quá nhiều lần. Hãy liên hệ Admin để được mở khóa.';
       } else {
-        // Increment failed attempts
         const { error } = await supabaseAdmin
           .from('staff')
           .update({
@@ -106,14 +120,13 @@ serve(async (req) => {
       });
     }
 
-    // Login successful - reset failed attempts
     const { error: resetError } = await supabaseAdmin
       .from('staff')
       .update({
         failed_login_attempts: 0,
         last_failed_login: null,
         locked_at: null,
-        account_status: 'active', // Ensure status is active on successful login
+        account_status: 'active',
       })
       .eq('id', staff.id);
 
@@ -121,7 +134,6 @@ serve(async (req) => {
       console.error('Error resetting failed login attempts:', resetError);
     }
 
-    // Return sanitized user data
     const sanitizedUser = {
       id: staff.id,
       username: staff.username,

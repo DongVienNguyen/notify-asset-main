@@ -16,7 +16,7 @@ const AssetEntryForm = () => {
     setMultipleAssets,
     isFormValid,
     handleRoomChange,
-    handleAssetChange,
+    handleAssetChange, // Đã có ở đây
     addAssetField,
     removeAssetField,
     handleSubmit,
@@ -61,7 +61,7 @@ const AssetEntryForm = () => {
 
         <AssetCodeInputs
           multipleAssets={multipleAssets}
-          onAssetChange={onAssetChange}
+          onAssetChange={handleAssetChange} {/* Đã sửa từ onAssetChange thành handleAssetChange */}
           onAddAssetField={addAssetField}
           onRemoveAssetField={removeAssetField}
           onAssetCodesDetected={handleAssetCodesDetected}

@@ -1,19 +1,14 @@
-
 import { useState, useEffect } from 'react';
-
-interface CurrentUser {
-  role: string;
-  username: string;
-}
+import { Staff } from '@/types/auth'; // Import Staff type
 
 export const useCurrentUser = () => {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<Staff | null>(null); // Use Staff type here
 
   const loadCurrentUser = async () => {
     try {
       const userStr = localStorage.getItem('currentUser');
       if (userStr) {
-        const user = JSON.parse(userStr);
+        const user: Staff = JSON.parse(userStr); // Cast to Staff type
         setCurrentUser(user);
         console.log('Current user loaded:', user);
       }

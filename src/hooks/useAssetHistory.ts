@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react'; // Added useCallback
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
+import { toast } from 'sonner';
 
 interface AssetHistory {
   id: string;
@@ -18,7 +18,7 @@ export const useAssetHistory = (user: any) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Save history record to the independent archive table
-  const saveHistory = async (historyRecord: {
+  const saveHistory = useCallback(async (historyRecord: { // Wrapped in useCallback
     asset_id: string;
     asset_name: string;
     change_type: 'create' | 'update' | 'delete';
@@ -72,7 +72,7 @@ export const useAssetHistory = (user: any) => {
       
       // Don't show error toast for delete operations to avoid annoying user
       if (historyRecord.change_type !== 'delete') {
-        toast.error("Cảnh báo", { // Changed toast call
+        toast.error("Cảnh báo", {
           description: "Không thể lưu lịch sử thay đổi",
         });
       }
@@ -80,7 +80,7 @@ export const useAssetHistory = (user: any) => {
       setIsLoading(false);
       return null;
     }
-  };
+  }, [user, setIsLoading]); // Dependencies for useCallback
 
   return {
     saveHistory,

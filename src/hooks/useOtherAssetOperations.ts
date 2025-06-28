@@ -1,3 +1,4 @@
+import { useCallback } from 'react'; // Added useCallback
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAssetHistory } from '@/hooks/useAssetHistory';
@@ -20,7 +21,7 @@ interface OtherAsset {
 export const useOtherAssetOperations = (user: any) => {
   const { saveHistory } = useAssetHistory(user);
 
-  const loadAssets = async () => {
+  const loadAssets = useCallback(async () => { // Wrapped in useCallback
     if (!user) return [];
     
     try {
@@ -48,9 +49,9 @@ export const useOtherAssetOperations = (user: any) => {
       });
       return [];
     }
-  };
+  }, [user]); // Dependencies for useCallback
 
-  const saveAsset = async (
+  const saveAsset = useCallback(async ( // Wrapped in useCallback
     newAsset: any,
     editingAsset: OtherAsset | null,
     changeReason: string
@@ -174,9 +175,9 @@ export const useOtherAssetOperations = (user: any) => {
       });
       return false;
     }
-  };
+  }, [user, saveHistory]); // Dependencies for useCallback
 
-  const deleteAsset = async (asset: OtherAsset) => {
+  const deleteAsset = useCallback(async (asset: OtherAsset) => { // Wrapped in useCallback
     if (!user || user.role !== 'admin') {
       toast.error("Không có quyền", {
         description: "Chỉ admin mới có thể xóa",
@@ -267,7 +268,7 @@ export const useOtherAssetOperations = (user: any) => {
       });
       return false;
     }
-  };
+  }, [user, saveHistory]); // Dependencies for useCallback
 
   return {
     loadAssets,

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface EmailRequest {
@@ -22,6 +21,14 @@ export interface EmailResponse {
 
 export const sendEmail = async (emailData: EmailRequest): Promise<EmailResponse> => {
   try {
+    if (!emailData.to || emailData.to.length === 0) {
+      return {
+        success: false,
+        error: 'Recipient list cannot be empty.',
+        message: 'Không thể gửi email: Danh sách người nhận trống.'
+      };
+    }
+
     console.log('Sending email via Edge Function:', emailData);
     
     const { data, error } = await supabase.functions.invoke('send-notification-email', {
@@ -31,14 +38,23 @@ export const sendEmail = async (emailData: EmailRequest): Promise<EmailResponse>
     console.log('Edge Function response:', { data, error });
 
     if (error) {
-      console.error('Edge Function error:', error);
-      throw new Error(`Lỗi gửi email: ${error.message}`);
+      console.error('Edge Function invocation error details:', error);
+      return {
+        success: false,
+        error: `Lỗi gửi email từ Edge Function: ${error.message || JSON.stringify(error)}`,
+        message: 'Không thể gửi email'
+      };
     }
 
     // Kiểm tra response từ Edge Function
     if (data && !data.success) {
-      console.error('Email service error:', data.error);
-      throw new Error(`Lỗi từ dịch vụ email: ${data.error}`);
+      console.error('Email service error:', data);
+      return {
+        success: false,
+        error: `Lỗi từ dịch vụ email: ${data.error || 'Lỗi không xác định'}`,
+        message: data.message || 'Không thể gửi email',
+        data: data
+      };
     }
 
     console.log('Email sent successfully:', data);

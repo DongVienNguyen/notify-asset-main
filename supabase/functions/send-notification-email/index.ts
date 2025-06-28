@@ -36,20 +36,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Has attachments:', !!attachments && attachments.length > 0);
     console.log('RESEND_API_KEY exists:', !!Deno.env.get("RESEND_API_KEY"));
 
-    // Kiểm tra API key
     if (!Deno.env.get("RESEND_API_KEY")) {
       throw new Error("RESEND_API_KEY not configured");
     }
 
-    // Prepare email data
     const emailData: any = {
-      from: "Hệ thống Tài sản <onboarding@resend.dev>",
+      from: "Hệ thống Tài sản <taisan@caremylife.me>", // Revert to original
       to: to,
       subject: subject,
       html: html,
     };
 
-    // Add attachments if provided
     if (attachments && attachments.length > 0) {
       emailData.attachments = attachments.map(att => ({
         filename: att.filename,
@@ -57,12 +54,14 @@ const handler = async (req: Request): Promise<Response> => {
       }));
     }
 
+    console.log("Email data being sent to Resend:", JSON.stringify(emailData, null, 2));
+
     const emailResponse = await resend.emails.send(emailData);
 
-    console.log("Email response:", emailResponse);
+    console.log("Resend API response:", emailResponse);
 
     if (emailResponse.error) {
-      console.error("Resend API error:", emailResponse.error);
+      console.error("Resend API error details:", emailResponse.error);
       throw new Error(`Resend API error: ${emailResponse.error.message}`);
     }
 
@@ -78,12 +77,13 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("Error in Edge Function handler:", error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message,
-        details: error.toString()
+        details: error.toString(),
+        stack: error.stack // Include stack trace
       }),
       {
         status: 500,

@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useSecureAuth } from '@/hooks/useSecureAuth';
-import { calculateDefaultValues } from '@/utils/defaultValues';
-import { validateAllAssets } from '@/utils/assetValidation';
+import { useState, useCallback } from 'react';
+import { format } from 'date-fns';
 
-interface FormData {
+export interface FormData {
   transaction_date: string;
   parts_day: string;
   room: string;
@@ -12,90 +10,61 @@ interface FormData {
 }
 
 export const useAssetEntryForm = () => {
-  const { user } = useSecureAuth();
   const [formData, setFormData] = useState<FormData>({
-    transaction_date: '',
-    parts_day: '',
+    transaction_date: format(new Date(), 'yyyy-MM-dd'), // Tự động điền ngày hiện tại
+    parts_day: 'Sáng',
     room: '',
     note: '',
-    transaction_type: ''
+    transaction_type: 'Xuất kho',
   });
-  const [multipleAssets, setMultipleAssets] = useState<string[]>(['']);
 
-  useEffect(() => {
-    if (user) {
-      const defaults = calculateDefaultValues(user);
-      setFormData(prev => ({
-        ...prev,
-        transaction_date: defaults.transaction_date,
-        parts_day: defaults.parts_day
-      }));
+  const [multipleAssets, setMultipleAssets] = useState<string[]>([]);
+  const [assetInput, setAssetInput] = useState('');
+
+  const handleFormDataChange = useCallback((field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleRoomChange = useCallback((value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      room: value,
+      note: '', // Reset note khi đổi phòng
+    }));
+  }, []);
+
+  const addAsset = useCallback(() => {
+    if (assetInput.trim() && !multipleAssets.includes(assetInput.trim())) {
+      setMultipleAssets(prev => [...prev, assetInput.trim()]);
+      setAssetInput('');
     }
-  }, [user]);
+  }, [assetInput, multipleAssets]);
 
-  const handleRoomChange = (selectedRoom: string) => {
-    setFormData(prev => {
-      const newData = { ...prev, room: selectedRoom };
-      
-      if (selectedRoom === 'QLN') {
-        newData.note = '';
-      } else if (['CMT8', 'NS', 'ĐS', 'LĐH'].includes(selectedRoom)) {
-        newData.note = 'Ship PGD';
-        newData.parts_day = 'Chiều';
-      }
-      
-      return newData;
+  const removeAsset = useCallback((assetToRemove: string) => {
+    setMultipleAssets(prev => prev.filter(asset => asset !== assetToRemove));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      transaction_date: format(new Date(), 'yyyy-MM-dd'),
+      parts_day: 'Sáng',
+      room: '',
+      note: '',
+      transaction_type: 'Xuất kho',
     });
-  };
-
-  const handleAssetChange = (index: number, value: string) => {
-    const newAssets = [...multipleAssets];
-    newAssets[index] = value;
-    setMultipleAssets(newAssets);
-  };
-
-  const addAssetField = () => {
-    setMultipleAssets([...multipleAssets, '']);
-  };
-
-  const removeAssetField = (index: number) => {
-    if (multipleAssets.length > 1) {
-      const newAssets = multipleAssets.filter((_, i) => i !== index);
-      setMultipleAssets(newAssets);
-    }
-  };
-
-  const isFormValid = useMemo(() => {
-    return formData.room && 
-           formData.transaction_type && 
-           formData.transaction_date && 
-           formData.parts_day &&
-           multipleAssets.every(asset => asset.trim() && validateAllAssets([asset]).isValid);
-  }, [formData, multipleAssets]);
-
-  const clearForm = () => {
-    setMultipleAssets(['']);
-    setFormData({ transaction_date: '', parts_day: '', room: '', note: '', transaction_type: '' });
-    if (user) {
-      const defaults = calculateDefaultValues(user);
-      setFormData(prev => ({
-        ...prev,
-        transaction_date: defaults.transaction_date,
-        parts_day: defaults.parts_day
-      }));
-    }
-  };
+    setMultipleAssets([]);
+    setAssetInput('');
+  }, []);
 
   return {
     formData,
-    setFormData,
     multipleAssets,
-    setMultipleAssets,
-    isFormValid,
+    assetInput,
+    setAssetInput,
+    handleFormDataChange,
     handleRoomChange,
-    handleAssetChange,
-    addAssetField,
-    removeAssetField,
-    clearForm
+    addAsset,
+    removeAsset,
+    resetForm,
   };
 };

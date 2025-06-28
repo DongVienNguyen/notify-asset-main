@@ -1,7 +1,7 @@
-import { useToast } from '@/hooks/use-toast';
 import { isDayMonthDueOrOverdue } from '@/utils/dateUtils';
 import { sendSingleReminder as sendSingleReminderOperation } from './useAssetReminderEmail/singleReminderOperations';
 import { sendReminders as sendRemindersOperation } from './useAssetReminderEmail/bulkReminderOperations';
+import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
 
 // Asset Reminder interface
 interface AssetReminder {
@@ -25,7 +25,7 @@ export const useAssetReminderEmail = (
   staff: { cbkh: StaffMember[]; cbqln: StaffMember[] },
   loadData: () => Promise<void>
 ) => {
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
 
   const sendSingleReminder = async (reminder: AssetReminder) => {
     await sendSingleReminderOperation(reminder, staff, toast, loadData);

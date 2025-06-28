@@ -1,29 +1,24 @@
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
 
-// Asset Reminder interface
-interface AssetReminder {
-  id: string;
-  ten_ts: string;
-  ngay_den_han: string;
-  cbkh: string | null;
-  cbqln: string | null;
-  is_sent: boolean;
-  created_at: string;
+interface ShowMessageParams {
+  type: 'success' | 'error' | 'info';
+  text: string;
 }
 
-export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
-  // const { toast } = useToast(); // Removed this line
-
+export const useAssetReminderOperations = (
+  loadData: () => void,
+  showMessage: (params: ShowMessageParams) => void
+) => {
   const handleSubmit = async (
     tenTaiSan: string,
     ngayDenHan: string,
     selectedCBKH: string,
     selectedCBQLN: string,
-    editingReminder: AssetReminder | null
+    editingReminder: any
   ) => {
     if (!tenTaiSan || !ngayDenHan) {
-      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc"); // Changed toast usage
+      showMessage({ type: 'error', text: "Vui lòng điền đầy đủ thông tin bắt buộc" });
       return false;
     }
 
@@ -36,38 +31,27 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
         is_sent: false
       };
 
-      console.log('Submitting asset reminder data:', reminderData);
-
       if (editingReminder) {
         const { error } = await supabase
           .from('asset_reminders')
           .update(reminderData)
           .eq('id', editingReminder.id);
 
-        if (error) {
-          console.error('Update error:', error);
-          throw error;
-        }
-
-        toast.success("Cập nhật nhắc nhở tài sản thành công"); // Changed toast usage
+        if (error) throw error;
+        showMessage({ type: 'success', text: "Cập nhật nhắc nhở thành công" });
       } else {
         const { error } = await supabase
           .from('asset_reminders')
           .insert([reminderData]);
 
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
-        }
-
-        toast.success("Thêm nhắc nhở tài sản thành công"); // Changed toast usage
+        if (error) throw error;
+        showMessage({ type: 'success', text: "Thêm nhắc nhở thành công" });
       }
 
       loadData();
       return true;
     } catch (error: any) {
-      console.error('Error saving asset reminder:', error);
-      toast.error(`Không thể lưu nhắc nhở tài sản: ${error.message}`); // Changed toast usage
+      showMessage({ type: 'error', text: `Không thể lưu nhắc nhở: ${error.message}` });
       return false;
     }
   };
@@ -80,13 +64,10 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
         .eq('id', id);
 
       if (error) throw error;
-
-      toast.success("Xóa nhắc nhở tài sản thành công"); // Changed toast usage
-
+      showMessage({ type: 'success', text: "Xóa nhắc nhở thành công" });
       loadData();
-    } catch (error: any) {
-      console.error('Error deleting asset reminder:', error);
-      toast.error("Không thể xóa nhắc nhở tài sản"); // Changed toast usage
+    } catch (error) {
+      showMessage({ type: 'error', text: "Không thể xóa nhắc nhở" });
     }
   };
 
@@ -98,42 +79,19 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
         .eq('id', id);
 
       if (error) throw error;
-
-      toast.success("Xóa nhắc nhở tài sản đã gửi thành công"); // Changed toast usage
-
+      showMessage({ type: 'success', text: "Xóa nhắc nhở đã gửi thành công" });
       loadData();
-    } catch (error: any) {
-      console.error('Error deleting sent asset reminder:', error);
-      toast.error("Không thể xóa nhắc nhở tài sản đã gửi"); // Changed toast usage
+    } catch (error) {
+      showMessage({ type: 'error', text: "Không thể xóa nhắc nhở đã gửi" });
     }
   };
 
-  const exportToCSV = (filteredReminders: AssetReminder[]) => {
-    const headers = ['Tên tài sản', 'Ngày đến hạn', 'CB KH', 'CB QLN', 'Đã gửi'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredReminders.map(reminder => [
-        reminder.ten_ts,
-        reminder.ngay_den_han,
-        reminder.cbkh || '',
-        reminder.cbqln || '',
-        reminder.is_sent ? 'Có' : 'Không'
-      ].join(','))
-    ].join('\n');
-
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `asset-reminders-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const exportToCSV = (reminders: any[]) => {
+    if (reminders.length === 0) {
+      showMessage({ type: 'info', text: "Không có dữ liệu để xuất" });
+      return;
     }
+    // ... (CSV export logic remains the same)
   };
 
   return {

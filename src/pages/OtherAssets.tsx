@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { Archive, History } from 'lucide-react';
+import { Archive, History, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Layout from '@/components/Layout';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ const OtherAssets = () => {
     searchTerm,
     setSearchTerm,
     editingAsset,
+    setEditingAsset,
     changeReason,
     setChangeReason,
     newAsset,
@@ -29,26 +30,24 @@ const OtherAssets = () => {
     editAsset,
     deleteAsset,
     clearForm,
-    setEditingAsset
+    message,
+    setMessage
   } = useOtherAssets(user);
 
-  // Check permissions
   useEffect(() => {
     if (user && user.department !== 'NQ' && user.role !== 'admin') {
-      toast.error("Chỉ nhân viên phòng NQ và admin mới có thể truy cập module này", {
-        description: "Không có quyền truy cập",
-      });
-      navigate('/');
+      setMessage({ type: 'error', text: "Chỉ nhân viên phòng NQ và admin mới có thể truy cập module này" });
+      setTimeout(() => navigate('/'), 3000);
       return;
     }
-  }, [user, navigate]);
+  }, [user, navigate, setMessage]);
 
   const handleCancelEdit = () => {
     setEditingAsset(null);
     setChangeReason('');
   };
 
-  if (isLoading) {
+  if (isLoading && filteredAssets.length === 0) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-96">
@@ -61,7 +60,6 @@ const OtherAssets = () => {
   return (
     <Layout>
       <div className="space-y-6 p-6">
-        {/* Header */}
         <div className="flex items-center space-x-4">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full">
             <Archive className="w-6 h-6 text-indigo-600" />
@@ -71,6 +69,13 @@ const OtherAssets = () => {
             <p className="text-gray-600">Quản lý tài sản và thùng khác được gửi vào kho</p>
           </div>
         </div>
+
+        {message.text && (
+          <Alert variant={message.type === 'error' ? 'destructive' : 'default'} className={message.type === 'success' ? 'bg-green-100 border-green-400 text-green-800' : ''}>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="assets" className="w-full">
           <TabsList>
@@ -98,19 +103,8 @@ const OtherAssets = () => {
               onClear={clearForm}
               onCancelEdit={handleCancelEdit}
             />
-
-            <OtherAssetSearchBar
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              filteredAssets={filteredAssets}
-            />
-
-            <OtherAssetTable
-              filteredAssets={filteredAssets}
-              user={user}
-              onEdit={editAsset}
-              onDelete={deleteAsset}
-            />
+            <OtherAssetSearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} filteredAssets={filteredAssets} />
+            <OtherAssetTable filteredAssets={filteredAssets} user={user} onEdit={editAsset} onDelete={deleteAsset} />
           </TabsContent>
 
           {user?.role === 'admin' && (

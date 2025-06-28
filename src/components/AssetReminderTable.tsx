@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Edit, Trash2, Mail, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ interface AssetReminderTableProps {
   onEdit: (reminder: any) => void;
   onDelete: (id: string) => void;
   onSendSingle: (reminder: any) => void;
-  isDateDueOrOverdue: (dateStr: string) => boolean;
+  isDayMonthDueOrOverdue: (dateStr: string) => boolean;
 }
 
 const AssetReminderTable: React.FC<AssetReminderTableProps> = ({
@@ -19,7 +18,7 @@ const AssetReminderTable: React.FC<AssetReminderTableProps> = ({
   onEdit,
   onDelete,
   onSendSingle,
-  isDateDueOrOverdue
+  isDayMonthDueOrOverdue
 }) => {
   if (isLoading) {
     return (
@@ -53,10 +52,10 @@ const AssetReminderTable: React.FC<AssetReminderTableProps> = ({
           <TableRow key={reminder.id}>
             <TableCell className="font-medium">{reminder.ten_ts}</TableCell>
             <TableCell 
-              className={`${isDateDueOrOverdue(reminder.ngay_den_han) ? 'bg-red-100 text-red-800 font-bold' : ''}`}
+              className={`${isDayMonthDueOrOverdue(reminder.ngay_den_han) ? 'bg-red-100 text-red-800 font-bold' : ''}`}
             >
               {reminder.ngay_den_han}
-              {isDateDueOrOverdue(reminder.ngay_den_han) && (
+              {isDayMonthDueOrOverdue(reminder.ngay_den_han) && (
                 <AlertCircle className="w-4 h-4 inline ml-2 text-red-600" />
               )}
             </TableCell>
@@ -68,7 +67,7 @@ const AssetReminderTable: React.FC<AssetReminderTableProps> = ({
                   size="sm" 
                   variant="outline" 
                   onClick={() => onSendSingle(reminder)}
-                  disabled={!isDateDueOrOverdue(reminder.ngay_den_han) || isLoading}
+                  disabled={!isDayMonthDueOrOverdue(reminder.ngay_den_han) || isLoading}
                   title="Gửi email nhắc nhở tài sản"
                 >
                   <Mail className="w-4 h-4" />

@@ -1,8 +1,9 @@
-
 import { useToast } from '@/hooks/use-toast';
-import { isDateDueOrOverdue } from './useAssetReminderEmail/dateUtils';
-import { sendSingleReminder as sendSingleReminderOperation } from './useAssetReminderEmail/singleReminderOperations';
-import { sendReminders as sendRemindersOperation } from './useAssetReminderEmail/bulkReminderOperations';
+import { sendAssetNotificationEmail } from '@/services/emailService';
+import { supabase } from '@/integrations/supabase/client';
+import { getEmailTemplate } from './emailTemplates';
+import { getRecipients } from './recipientUtils';
+import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Updated import
 
 // Asset Reminder interface
 interface AssetReminder {
@@ -37,7 +38,7 @@ export const useAssetReminderEmail = (
   };
 
   return {
-    isDateDueOrOverdue,
+    isDateDueOrOverdue: isDayMonthDueOrOverdue, // Use the centralized function
     sendSingleReminder,
     sendReminders
   };

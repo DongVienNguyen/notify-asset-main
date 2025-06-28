@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import DateInput from '@/components/DateInput';
 
 interface OtherAsset {
   id: string;
@@ -80,11 +80,9 @@ const OtherAssetForm: React.FC<OtherAssetFormProps> = ({
 
           <div>
             <Label htmlFor="deposit_date">Ngày gửi kho *</Label>
-            <Input
-              id="deposit_date"
-              type="date"
+            <DateInput
               value={newAsset.deposit_date}
-              onChange={(e) => setNewAsset(prev => ({ ...prev, deposit_date: e.target.value }))}
+              onChange={(value) => setNewAsset(prev => ({ ...prev, deposit_date: value }))}
             />
           </div>
 
@@ -110,11 +108,9 @@ const OtherAssetForm: React.FC<OtherAssetFormProps> = ({
 
           <div>
             <Label htmlFor="withdrawal_date">Ngày xuất kho (nếu có)</Label>
-            <Input
-              id="withdrawal_date"
-              type="date"
+            <DateInput
               value={newAsset.withdrawal_date}
-              onChange={(e) => setNewAsset(prev => ({ ...prev, withdrawal_date: e.target.value }))}
+              onChange={(value) => setNewAsset(prev => ({ ...prev, withdrawal_date: value }))}
             />
           </div>
 

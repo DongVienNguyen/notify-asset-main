@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Edit, Trash2, Mail, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface CRCReminderTableProps {
   filteredReminders: any[];
   isLoading: boolean;
-  isDateDueOrOverdue: (dateStr: string) => boolean;
+  isDayMonthDueOrOverdue: (dateStr: string) => boolean;
   onSendSingleReminder: (reminder: any) => void;
   onEdit: (reminder: any) => void;
   onDelete: (id: string) => void;
@@ -16,7 +15,7 @@ interface CRCReminderTableProps {
 const CRCReminderTable: React.FC<CRCReminderTableProps> = ({
   filteredReminders,
   isLoading,
-  isDateDueOrOverdue,
+  isDayMonthDueOrOverdue,
   onSendSingleReminder,
   onEdit,
   onDelete
@@ -46,10 +45,10 @@ const CRCReminderTable: React.FC<CRCReminderTableProps> = ({
           <TableRow key={reminder.id}>
             <TableCell className="font-medium">{reminder.loai_bt_crc}</TableCell>
             <TableCell 
-              className={`${isDateDueOrOverdue(reminder.ngay_thuc_hien) ? 'bg-red-100 text-red-800 font-bold' : ''}`}
+              className={`${isDayMonthDueOrOverdue(reminder.ngay_thuc_hien) ? 'bg-red-100 text-red-800 font-bold' : ''}`}
             >
               {reminder.ngay_thuc_hien}
-              {isDateDueOrOverdue(reminder.ngay_thuc_hien) && (
+              {isDayMonthDueOrOverdue(reminder.ngay_thuc_hien) && (
                 <AlertCircle className="w-4 h-4 inline ml-2 text-red-600" />
               )}
             </TableCell>
@@ -62,7 +61,7 @@ const CRCReminderTable: React.FC<CRCReminderTableProps> = ({
                   size="sm" 
                   variant="outline" 
                   onClick={() => onSendSingleReminder(reminder)}
-                  disabled={!isDateDueOrOverdue(reminder.ngay_thuc_hien) || isLoading}
+                  disabled={!isDayMonthDueOrOverdue(reminder.ngay_thuc_hien) || isLoading}
                   title="Gửi email nhắc nhở CRC"
                 >
                   <Mail className="w-4 h-4" />

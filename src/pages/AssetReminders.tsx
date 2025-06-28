@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Layout from '@/components/Layout';
-import DateInput from '@/components/DateInput';
+import DayMonthInput from '@/components/DayMonthInput'; // Use DayMonthInput
 import ComboBox from '@/components/ComboBox';
 import AssetReminderTable from '@/components/AssetReminderTable';
 import SentAssetReminderTable from '@/components/SentAssetReminderTable';
@@ -149,7 +148,7 @@ const AssetReminders = () => {
                 
                 <div>
                   <Label htmlFor="ngayDenHan">Ngày đến hạn</Label>
-                  <DateInput
+                  <DayMonthInput
                     value={ngayDenHan}
                     onChange={setNgayDenHan}
                     placeholder="dd-MM"
@@ -217,7 +216,7 @@ const AssetReminders = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onSendSingle={sendSingleReminder}
-              isDateDueOrOverdue={isDateDueOrOverdue}
+              isDayMonthDueOrOverdue={isDateDueOrOverdue}
             />
           </CardContent>
         </Card>

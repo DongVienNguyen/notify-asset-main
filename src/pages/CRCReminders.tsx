@@ -9,10 +9,11 @@ import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { sendAssetNotificationEmail } from '@/services/emailService';
 import { useCRCData } from '@/hooks/useCRCData';
-import DateInput from '@/components/DateInput';
+import DayMonthInput from '@/components/DayMonthInput'; // Use DayMonthInput
 import ComboBox from '@/components/ComboBox';
 import CRCReminderTable from '@/components/CRCReminderTable';
 import SentCRCReminderTable from '@/components/SentCRCReminderTable';
+import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Use centralized util
 
 const CRCReminders = () => {
   const { toast } = useToast();
@@ -56,26 +57,7 @@ const CRCReminders = () => {
     }
   };
 
-  // Helper function để parse date và compare với current date
-  const parseDateString = (dateStr: string) => {
-    const [day, month] = dateStr.split('-').map(num => parseInt(num, 10));
-    const currentYear = new Date().getFullYear();
-    return new Date(currentYear, month - 1, day);
-  };
-
-  const isDateDueOrOverdue = (dateStr: string) => {
-    try {
-      const dueDate = parseDateString(dateStr);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      dueDate.setHours(0, 0, 0, 0);
-      
-      return dueDate <= today;
-    } catch (error) {
-      console.error('Error parsing date:', dateStr, error);
-      return false;
-    }
-  };
+  // Helper function to parse date and compare with current date is now removed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,7 +192,7 @@ const CRCReminders = () => {
 
   const sendSingleReminder = async (reminder: any) => {
     try {
-      if (!isDateDueOrOverdue(reminder.ngay_thuc_hien)) {
+      if (!isDayMonthDueOrOverdue(reminder.ngay_thuc_hien)) {
         toast({
           title: "Thông báo",
           description: "Nhắc nhở CRC này chưa đến hạn",
@@ -328,7 +310,7 @@ const CRCReminders = () => {
 
   const sendReminders = async () => {
     try {
-      const dueReminders = reminders.filter(reminder => isDateDueOrOverdue(reminder.ngay_thuc_hien));
+      const dueReminders = reminders.filter(reminder => isDayMonthDueOrOverdue(reminder.ngay_thuc_hien));
       
       if (dueReminders.length === 0) {
         toast({
@@ -548,7 +530,7 @@ const CRCReminders = () => {
                 
                 <div>
                   <Label htmlFor="ngayThucHien">Ngày thực hiện</Label>
-                  <DateInput
+                  <DayMonthInput
                     value={ngayThucHien}
                     onChange={setNgayThucHien}
                     placeholder="26-06"
@@ -624,7 +606,7 @@ const CRCReminders = () => {
             <CRCReminderTable
               filteredReminders={filteredReminders}
               isLoading={isLoading}
-              isDateDueOrOverdue={isDateDueOrOverdue}
+              isDayMonthDueOrOverdue={isDayMonthDueOrOverdue}
               onSendSingleReminder={sendSingleReminder}
               onEdit={handleEdit}
               onDelete={handleDelete}

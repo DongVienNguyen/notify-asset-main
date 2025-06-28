@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import { getAssetTransactions } from '@/services/assetService';
+import { formatToDDMMYYYY } from '@/utils/dateUtils';
+import DateInput from '@/components/DateInput';
 
 interface Transaction {
   id: string;
@@ -243,13 +245,7 @@ const DailyReport = () => {
     return getDateBasedOnTime();
   };
 
-  // Updated formatDate function to use dd/MM/yyyy format
-  const formatDate = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
+  // Updated formatDate function to use dd/MM/yyyy format is now removed
 
   const groupedRows = useMemo(() => {
     const groups: { [key: string]: { [year: string]: number[] } } = {};
@@ -313,9 +309,9 @@ const DailyReport = () => {
 
   const getFilterDisplayText = () => {
     const gmtPlus7 = getGMTPlus7Date();
-    const todayFormatted = formatDate(gmtPlus7);
-    const morningTarget = formatDate(getMorningTargetDate());
-    const nextWorking = formatDate(getNextWorkingDay(gmtPlus7));
+    const todayFormatted = formatToDDMMYYYY(gmtPlus7);
+    const morningTarget = formatToDDMMYYYY(getMorningTargetDate());
+    const nextWorking = formatToDDMMYYYY(getNextWorkingDay(gmtPlus7));
 
     switch (filterType) {
       case 'qln_pgd_next_day':
@@ -331,7 +327,7 @@ const DailyReport = () => {
         return `Trong ngày kế tiếp (${nextWorking})`;
       case 'custom':
         return customFilters.start && customFilters.end 
-          ? `Từ ${formatDate(new Date(customFilters.start))} đến ${formatDate(new Date(customFilters.end))}`
+          ? `Từ ${formatToDDMMYYYY(new Date(customFilters.start))} đến ${formatToDDMMYYYY(new Date(customFilters.end))}`
           : 'Tùy chọn khoảng thời gian';
       default:
         return '';
@@ -373,23 +369,23 @@ const DailyReport = () => {
             <RadioGroup value={filterType} onValueChange={setFilterType} className="space-y-3">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="morning" id="morning" />
-                <Label htmlFor="morning">Sáng ngày ({formatDate(getMorningTargetDate())})</Label>
+                <Label htmlFor="morning">Sáng ngày ({formatToDDMMYYYY(getMorningTargetDate())})</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="qln_pgd_next_day" id="qln_pgd_next_day" />
-                <Label htmlFor="qln_pgd_next_day">QLN Sáng & PGD trong ngày ({formatDate(getMorningTargetDate())})</Label>
+                <Label htmlFor="qln_pgd_next_day">QLN Sáng & PGD trong ngày ({formatToDDMMYYYY(getMorningTargetDate())})</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="afternoon" id="afternoon" />
-                <Label htmlFor="afternoon">Chiều ngày ({formatDate(getNextWorkingDay(getGMTPlus7Date()))})</Label>
+                <Label htmlFor="afternoon">Chiều ngày ({formatToDDMMYYYY(getNextWorkingDay(getGMTPlus7Date()))})</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="today" id="today" />
-                <Label htmlFor="today">Trong ngày hôm nay ({formatDate(getGMTPlus7Date())})</Label>
+                <Label htmlFor="today">Trong ngày hôm nay ({formatToDDMMYYYY(getGMTPlus7Date())})</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="next_day" id="next_day" />
-                <Label htmlFor="next_day">Trong ngày kế tiếp ({formatDate(getNextWorkingDay(getGMTPlus7Date()))})</Label>
+                <Label htmlFor="next_day">Trong ngày kế tiếp ({formatToDDMMYYYY(getNextWorkingDay(getGMTPlus7Date()))})</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="custom" id="custom" />
@@ -418,19 +414,17 @@ const DailyReport = () => {
                 
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">Từ ngày</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={customFilters.start}
-                    onChange={(e) => setCustomFilters(prev => ({ ...prev, start: e.target.value }))}
+                    onChange={(value) => setCustomFilters(prev => ({ ...prev, start: value }))}
                   />
                 </div>
                 
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">Đến ngày</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={customFilters.end}
-                    onChange={(e) => setCustomFilters(prev => ({ ...prev, end: e.target.value }))}
+                    onChange={(value) => setCustomFilters(prev => ({ ...prev, end: value }))}
                   />
                 </div>
               </div>
@@ -525,7 +519,7 @@ const DailyReport = () => {
                           <TableCell>{transaction.asset_year}</TableCell>
                           <TableCell>{transaction.asset_code}</TableCell>
                           <TableCell>{transaction.transaction_type}</TableCell>
-                          <TableCell>{formatDate(new Date(transaction.transaction_date))}</TableCell>
+                          <TableCell>{formatToDDMMYYYY(transaction.transaction_date)}</TableCell>
                           <TableCell>{transaction.parts_day}</TableCell>
                           <TableCell>{transaction.note}</TableCell>
                           <TableCell>{transaction.staff_code}</TableCell>

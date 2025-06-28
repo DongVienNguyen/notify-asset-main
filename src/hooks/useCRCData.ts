@@ -1,7 +1,6 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Changed from '@/hooks/use-toast'
 
 interface StaffMember {
   id: string;
@@ -47,7 +46,7 @@ interface CRCDataState {
 }
 
 export const useCRCData = () => {
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
   const [data, setData] = useState<CRCDataState>({
     staff: { ldpcrc: [], cbcrc: [], quycrc: [] },
     reminders: [],
@@ -118,10 +117,7 @@ export const useCRCData = () => {
 
       // Show success message
       const totalStaff = staff.ldpcrc.length + staff.cbcrc.length + staff.quycrc.length;
-      toast({
-        title: "✅ Thành công",
-        description: `Đã tải ${totalStaff} cán bộ CRC, ${reminders.length} nhắc nhở, ${sentReminders.length} đã gửi`,
-      });
+      toast.success(`Đã tải ${totalStaff} cán bộ CRC, ${reminders.length} nhắc nhở, ${sentReminders.length} đã gửi`);
 
     } catch (error) {
       console.error('💥 Critical error loading CRC data:', error);
@@ -133,11 +129,7 @@ export const useCRCData = () => {
         error: errorMessage
       }));
 
-      toast({
-        title: "❌ Lỗi",
-        description: `Không thể tải dữ liệu CRC: ${errorMessage}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể tải dữ liệu CRC: ${errorMessage}`);
     }
   }, [toast]);
 
@@ -169,18 +161,11 @@ export const useCRCData = () => {
         }
       });
 
-      toast({
-        title: "🔍 Test kết nối hoàn tất",
-        description: "Kiểm tra console để xem chi tiết",
-      });
+      toast.info("Kiểm tra console để xem chi tiết");
 
     } catch (error) {
       console.error('💥 Connection test failed:', error);
-      toast({
-        title: "❌ Test kết nối thất bại", 
-        description: "Kiểm tra console để xem lỗi",
-        variant: "destructive",
-      });
+      toast.error("Kiểm tra console để xem lỗi");
     }
   }, [toast]);
 

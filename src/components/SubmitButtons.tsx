@@ -2,13 +2,13 @@ import React from 'react';
 import { Bug, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { AuthUser } from '@/types/auth'; // Import AuthUser
+import { Staff } from '@/types/auth'; // Import Staff instead of AuthUser
 
 interface SubmitButtonsProps {
   isRestrictedTime: boolean;
   isFormValid: boolean;
   isLoading: boolean;
-  user: AuthUser | null; // Use AuthUser here for consistency
+  user: Staff | null; // Use Staff here for consistency
   onClear: () => void;
   onSubmit: (e: React.FormEvent) => void;
   onTestEmail: () => void;

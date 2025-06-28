@@ -1,8 +1,8 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { AuthContextType, Staff, LoginResult } from '@/types/auth';
 import { getStoredUser, storeUser, removeStoredUser } from '@/utils/authUtils';
 import { 
-  secureLoginUser // Import the new login function
+  secureLoginUser
 } from '@/services/secureAuthService';
 import { setCurrentUserContext } from '@/utils/otherAssetUtils';
 import { validateInput } from '@/utils/inputValidation';
@@ -15,21 +15,27 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      if (storedUser.username && storedUser.role) {
-        setUser(storedUser);
-        setCurrentUserContext(storedUser);
-      } else {
-        removeStoredUser();
-        logSecurityEvent('INVALID_STORED_USER_DATA');
+    try {
+      const storedUser = getStoredUser();
+      if (storedUser) {
+        if (storedUser.username && storedUser.role) {
+          setUser(storedUser);
+          setCurrentUserContext(storedUser);
+        } else {
+          removeStoredUser();
+          logSecurityEvent('INVALID_STORED_USER_DATA');
+        }
       }
+    } catch (error) {
+      console.error("Failed to initialize auth state:", error);
+      removeStoredUser();
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<LoginResult> => {
-    // Client-side input validation (basic)
+  const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
     const usernameValidation = validateInput.validateText(username, 30);
     if (!usernameValidation.isValid) {
       return { error: usernameValidation.error || 'Tên đăng nhập không hợp lệ' };
@@ -41,7 +47,6 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      // Call the secure login function which uses the Edge Function
       const { user: loggedInUser, error: loginError } = await secureLoginUser(username, password);
 
       if (loginError) {
@@ -49,27 +54,25 @@ export function SecureAuthProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (loggedInUser) {
-        // Login successful
-        await setCurrentUserContext(loggedInUser); // Set user context for RLS
+        await setCurrentUserContext(loggedInUser);
         setUser(loggedInUser);
         storeUser(loggedInUser);
         return { error: null };
       } else {
-        // This case should ideally not be reached if loginError is null
         return { error: 'Đăng nhập thất bại không xác định' };
       }
     } catch (error) {
       logSecurityEvent('LOGIN_EXCEPTION', { error: (error as Error).message });
       return { error: 'Đã xảy ra lỗi trong quá trình đăng nhập' };
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     logSecurityEvent('LOGOUT', { username: user?.username });
     setUser(null);
     removeStoredUser();
     window.location.href = '/login';
-  };
+  }, [user]);
 
   return (
     <SecureAuthContext.Provider value={{ user, login, logout, loading }}>

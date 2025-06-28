@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getAssetTransactions, AssetTransactionFilters } from '@/services/assetService';
 import { 
@@ -23,8 +24,7 @@ interface Transaction {
 }
 
 export const useDailyReportLogic = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // UI State
   const [isExporting, setIsExporting] = useState(false);
   const [showGrouped, setShowGrouped] = useState(true);
   const [filterType, setFilterType] = useState('qln_pgd_next_day');
@@ -35,7 +35,10 @@ export const useDailyReportLogic = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const resultsRef = useRef<HTMLDivElement>(null);
-  
+
+  // State to drive the query
+  const [activeFilters, setActiveFilters] = useState<AssetTransactionFilters>({});
+
   const ITEMS_PER_PAGE = 10;
 
   const dateValues = useMemo(() => ({
@@ -50,73 +53,48 @@ export const useDailyReportLogic = () => {
     nextWorkingDayFormatted: formatToDDMMYYYY(dateValues.nextWorkingDay),
   }), [dateValues]);
 
-  const loadTransactions = async (currentFilterType: string, currentCustomFilters: typeof customFilters) => {
-    setIsLoading(true);
-    try {
-      const filters: AssetTransactionFilters = {};
-      const todayStr = dateValues.gmtPlus7.toISOString().split('T')[0];
-      const morningTargetStr = dateValues.morningTargetDate.toISOString().split('T')[0];
-      const nextWorkingDayStr = dateValues.nextWorkingDay.toISOString().split('T')[0];
-
-      switch (currentFilterType) {
-        case 'qln_pgd_next_day':
-          filters.isQlnPgdNextDay = true;
-          filters.startDate = morningTargetStr;
-          break;
-        case 'morning':
-          filters.startDate = morningTargetStr;
-          filters.endDate = morningTargetStr;
-          filters.parts_day = 'Sáng';
-          break;
-        case 'afternoon':
-          filters.startDate = nextWorkingDayStr;
-          filters.endDate = nextWorkingDayStr;
-          filters.parts_day = 'Chiều';
-          break;
-        case 'today':
-          filters.startDate = todayStr;
-          filters.endDate = todayStr;
-          break;
-        case 'next_day':
-          filters.startDate = nextWorkingDayStr;
-          filters.endDate = nextWorkingDayStr;
-          break;
-        case 'custom':
-          if (currentCustomFilters.start && currentCustomFilters.end) {
-            filters.startDate = currentCustomFilters.start;
-            filters.endDate = currentCustomFilters.end;
-            filters.parts_day = currentCustomFilters.parts_day as 'Sáng' | 'Chiều' | 'all';
-          } else {
-            setTransactions([]);
-            setIsLoading(false);
-            return;
-          }
-          break;
-        default:
-          setTransactions([]);
-          setIsLoading(false);
-          return;
-      }
-
-      const data = await getAssetTransactions(filters);
-      setTransactions(data);
-      setCurrentPage(1);
-    } catch (error) {
-      console.error('Error loading transactions:', error);
-      toast.error("Không thể tải dữ liệu từ cơ sở dữ liệu");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Effect to update active filters for non-custom types
   useEffect(() => {
-    if (filterType !== 'custom') {
-      loadTransactions(filterType, customFilters);
-    } else {
-      setTransactions([]);
+    if (filterType === 'custom') {
+      setActiveFilters({}); // Clear filters for custom type until applied
+      return;
     }
+
+    const filters: AssetTransactionFilters = {};
+    const todayStr = dateValues.gmtPlus7.toISOString().split('T')[0];
+    const morningTargetStr = dateValues.morningTargetDate.toISOString().split('T')[0];
+    const nextWorkingDayStr = dateValues.nextWorkingDay.toISOString().split('T')[0];
+
+    switch (filterType) {
+      case 'qln_pgd_next_day':
+        filters.isQlnPgdNextDay = true;
+        filters.startDate = morningTargetStr;
+        break;
+      case 'morning':
+        filters.startDate = morningTargetStr;
+        filters.endDate = morningTargetStr;
+        filters.parts_day = 'Sáng';
+        break;
+      case 'afternoon':
+        filters.startDate = nextWorkingDayStr;
+        filters.endDate = nextWorkingDayStr;
+        filters.parts_day = 'Chiều';
+        break;
+      case 'today':
+        filters.startDate = todayStr;
+        filters.endDate = todayStr;
+        break;
+      case 'next_day':
+        filters.startDate = nextWorkingDayStr;
+        filters.endDate = nextWorkingDayStr;
+        break;
+      default:
+        break;
+    }
+    setActiveFilters(filters);
   }, [filterType, dateValues]);
 
+  // Effect to initialize custom filter dates
   useEffect(() => {
     setCustomFilters({
       start: dateValues.gmtPlus7.toISOString().split('T')[0],
@@ -125,6 +103,24 @@ export const useDailyReportLogic = () => {
     });
   }, [dateValues]);
 
+  // Data fetching with React Query
+  const { data: transactions = [], isLoading } = useQuery<Transaction[], Error>({
+    queryKey: ['assetTransactions', activeFilters],
+    queryFn: () => getAssetTransactions(activeFilters),
+    enabled: !!activeFilters.startDate, // Only run query if filters have a start date
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error) => {
+      console.error('Error loading transactions:', error);
+      toast.error(`Không thể tải dữ liệu: ${error.message}`);
+    }
+  });
+  
+  // Reset page number when transactions data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [transactions]);
+
+  // Scroll effect for mobile
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
     if (isMobile && transactions.length > 0 && resultsRef.current) {
@@ -134,8 +130,17 @@ export const useDailyReportLogic = () => {
     }
   }, [transactions]);
 
+  // Handler for the custom filter button
   const handleCustomFilter = () => {
-    loadTransactions('custom', customFilters);
+    if (customFilters.start && customFilters.end) {
+      setActiveFilters({
+        startDate: customFilters.start,
+        endDate: customFilters.end,
+        parts_day: customFilters.parts_day as 'Sáng' | 'Chiều' | 'all',
+      });
+    } else {
+      toast.warning("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
+    }
   };
 
   const groupedRows = useMemo(() => {

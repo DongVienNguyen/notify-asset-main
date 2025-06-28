@@ -95,15 +95,16 @@ export const useOtherAssetOperations = (user: any) => {
       console.log('DEBUG: newAsset.deposit_date before processing:', newAsset.deposit_date);
       const assetData = {
         name: newAsset.name.trim(),
-        deposit_date: newAsset.deposit_date || null,
+        deposit_date: newAsset.deposit_date.trim() === '' ? null : newAsset.deposit_date, // Chuyển chuỗi rỗng hoặc chỉ khoảng trắng thành NULL
         depositor: newAsset.depositor?.trim() || null,
         deposit_receiver: newAsset.deposit_receiver?.trim() || null,
-        withdrawal_date: newAsset.withdrawal_date || null,
+        withdrawal_date: newAsset.withdrawal_date.trim() === '' ? null : newAsset.withdrawal_date, // Áp dụng tương tự cho withdrawal_date
         withdrawal_deliverer: newAsset.withdrawal_deliverer?.trim() || null,
         withdrawal_receiver: newAsset.withdrawal_receiver?.trim() || null,
         notes: notesWithTimestamp
       };
       console.log('DEBUG: assetData.deposit_date sent to DB:', assetData.deposit_date);
+      console.log('DEBUG: Full assetData payload:', assetData); // Log toàn bộ payload
 
       if (editingAsset) {
         const { data: updatedAsset, error: updateError } = await supabase

@@ -1,5 +1,4 @@
-
-import { testEmailFunction } from '@/services/emailService';
+import { testEmailFunction } from './notifications/assetNotificationService';
 
 export const performEmailTest = async (username: string) => {
   console.log('=== TEST EMAIL FUNCTION START ===');
@@ -15,4 +14,11 @@ export const performEmailTest = async (username: string) => {
   console.log('=== TEST EMAIL FUNCTION END ===');
   
   return result;
+};
+
+export const sendTestEmail = async () => {
+  // Trong một ứng dụng thực tế, bạn sẽ lấy username từ phiên đăng nhập hiện tại
+  // hoặc một nguồn cấu hình. Ví dụ dưới đây sử dụng một giá trị mặc định.
+  const testUsername = 'testuser@example.com'; // Thay thế bằng email người dùng thực tế hoặc email test cấu hình
+  return await testEmailFunction(testUsername);
 };

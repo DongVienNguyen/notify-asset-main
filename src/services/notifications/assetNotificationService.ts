@@ -1,4 +1,3 @@
-
 import { sendEmail, type EmailResponse } from '../core/emailClient';
 import { formatEmailAddress } from '../utils/emailUtils';
 
@@ -44,22 +43,30 @@ export const testEmailFunction = async (username: string): Promise<EmailResponse
 
 export const sendAssetTransactionConfirmation = async (
   username: string,
-  transactionData: any,
+  transactionData: any[], // Changed to array
   isSuccess: boolean
 ): Promise<EmailResponse> => {
   const recipientEmail = formatEmailAddress(username);
   
   if (isSuccess) {
     const subject = "Xác nhận thông báo tài sản thành công";
+    
+    // Build content for multiple assets
+    const assetsListHtml = transactionData.map(data => `
+      <p><strong>Mã tài sản:</strong> ${data.asset_code}.${data.asset_year}</p>
+      ${data.note ? `<p><strong>Ghi chú:</strong> ${data.note}</p>` : ''}
+      <hr style="border: none; border-top: 1px solid #eee; margin: 10px 0;">
+    `).join('');
+
     const content = `
       <h3>Thông báo tài sản đã được ghi nhận thành công</h3>
-      <p><strong>Mã nhân viên:</strong> ${transactionData.staff_code}</p>
-      <p><strong>Ngày giao dịch:</strong> ${transactionData.transaction_date}</p>
-      <p><strong>Buổi:</strong> ${transactionData.parts_day}</p>
-      <p><strong>Phòng:</strong> ${transactionData.room}</p>
-      <p><strong>Loại giao dịch:</strong> ${transactionData.transaction_type}</p>
-      <p><strong>Mã tài sản:</strong> ${transactionData.asset_code}.${transactionData.asset_year}</p>
-      ${transactionData.note ? `<p><strong>Ghi chú:</strong> ${transactionData.note}</p>` : ''}
+      <p>Các tài sản sau đã được ghi nhận:</p>
+      ${assetsListHtml}
+      <p><strong>Mã nhân viên:</strong> ${transactionData[0].staff_code}</p>
+      <p><strong>Ngày giao dịch:</strong> ${transactionData[0].transaction_date}</p>
+      <p><strong>Buổi:</strong> ${transactionData[0].parts_day}</p>
+      <p><strong>Phòng:</strong> ${transactionData[0].room}</p>
+      <p><strong>Loại giao dịch:</strong> ${transactionData[0].transaction_type}</p>
       <p style="color: #16a34a; font-weight: bold;">Thông báo đã được lưu vào hệ thống thành công.</p>
     `;
     

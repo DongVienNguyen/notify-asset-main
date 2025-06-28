@@ -1,4 +1,3 @@
-
 import { saveAssetTransactions, AssetTransaction } from '@/services/assetService';
 import { sendAssetTransactionConfirmation } from '@/services/emailService';
 import { FormData } from '@/types/assetSubmission';
@@ -35,7 +34,7 @@ export const submitAssetTransactions = async (
   console.log('=== SENDING EMAIL NOTIFICATION ===');
   const emailResult = await sendAssetTransactionConfirmation(
     username,
-    savedTransactions[0], // Pass the first transaction as sample data
+    savedTransactions, // Pass the entire array of saved transactions
     true // isSuccess = true since we successfully saved to database
   );
   console.log('Email notification result:', emailResult);

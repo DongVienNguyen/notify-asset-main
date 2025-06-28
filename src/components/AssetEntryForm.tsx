@@ -61,7 +61,7 @@ const AssetEntryForm = () => {
 
         <AssetCodeInputs
           multipleAssets={multipleAssets}
-          onAssetChange={handleAssetChange}
+          onAssetChange={onAssetChange}
           onAddAssetField={addAssetField}
           onRemoveAssetField={removeAssetField}
           onAssetCodesDetected={handleAssetCodesDetected}

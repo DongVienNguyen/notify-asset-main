@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Changed from '@/hooks/use-toast'
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { sendAssetNotificationEmail } from '@/services/emailService';
@@ -16,7 +16,7 @@ import SentCRCReminderTable from '@/components/SentCRCReminderTable';
 import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Use centralized util
 
 const CRCReminders = () => {
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
   const {
     staff,
     reminders,
@@ -63,11 +63,7 @@ const CRCReminders = () => {
     e.preventDefault();
     
     if (!loaiCRC || !ngayThucHien) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin bắt buộc",
-        variant: "destructive",
-      });
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc"); // Changed toast call
       return;
     }
 
@@ -97,10 +93,7 @@ const CRCReminders = () => {
 
         if (error) throw error;
 
-        toast({
-          title: "✅ Thành công",
-          description: "Cập nhật nhắc nhở CRC thành công",
-        });
+        toast.success("Cập nhật nhắc nhở CRC thành công"); // Changed toast call
       } else {
         const { error } = await supabase
           .from('crc_reminders')
@@ -108,10 +101,7 @@ const CRCReminders = () => {
 
         if (error) throw error;
 
-        toast({
-          title: "✅ Thành công",
-          description: "Thêm nhắc nhở CRC thành công",
-        });
+        toast.success("Thêm nhắc nhở CRC thành công"); // Changed toast call
       }
 
       // Reset form
@@ -119,11 +109,7 @@ const CRCReminders = () => {
       refreshData();
     } catch (error) {
       console.error('Error saving CRC reminder:', error);
-      toast({
-        title: "❌ Lỗi",
-        description: `Không thể lưu nhắc nhở CRC: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể lưu nhắc nhở CRC: ${error.message}`); // Changed toast call
     }
   };
 
@@ -162,19 +148,12 @@ const CRCReminders = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Xóa nhắc nhở CRC thành công",
-      });
+      toast.success("Xóa nhắc nhở CRC thành công"); // Changed toast call
 
       refreshData();
     } catch (error) {
       console.error('Error deleting CRC reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa nhắc nhở CRC",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa nhắc nhở CRC"); // Changed toast call
     }
   };
 
@@ -193,11 +172,7 @@ const CRCReminders = () => {
   const sendSingleReminder = async (reminder: any) => {
     try {
       if (!isDayMonthDueOrOverdue(reminder.ngay_thuc_hien)) {
-        toast({
-          title: "Thông báo",
-          description: "Nhắc nhở CRC này chưa đến hạn",
-          variant: "destructive",
-        });
+        toast.info("Nhắc nhở CRC này chưa đến hạn"); // Changed toast call
         return;
       }
 
@@ -225,11 +200,7 @@ const CRCReminders = () => {
       }
 
       if (recipients.length === 0) {
-        toast({
-          title: "Lỗi",
-          description: "Không tìm thấy người nhận email",
-          variant: "destructive",
-        });
+        toast.error("Không tìm thấy người nhận email"); // Changed toast call
         return;
       }
 
@@ -284,27 +255,16 @@ const CRCReminders = () => {
 
         console.log(`Successfully moved CRC reminder ${reminder.id} to sent table`);
 
-        toast({
-          title: "Thành công",
-          description: "Đã gửi email nhắc nhở CRC và chuyển sang danh sách đã gửi",
-        });
+        toast.success("Đã gửi email nhắc nhở CRC và chuyển sang danh sách đã gửi"); // Changed toast call
 
         refreshData();
       } else {
         console.error(`Failed to send CRC email for reminder ${reminder.id}:`, emailResult.error);
-        toast({
-          title: "Lỗi",
-          description: `Không thể gửi email: ${emailResult.error}`,
-          variant: "destructive",
-        });
+        toast.error(`Không thể gửi email: ${emailResult.error}`); // Changed toast call
       }
     } catch (error) {
       console.error('Error sending single CRC reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: `Không thể gửi email nhắc nhở CRC: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể gửi email nhắc nhở CRC: ${error.message}`); // Changed toast call
     }
   };
 
@@ -313,10 +273,7 @@ const CRCReminders = () => {
       const dueReminders = reminders.filter(reminder => isDayMonthDueOrOverdue(reminder.ngay_thuc_hien));
       
       if (dueReminders.length === 0) {
-        toast({
-          title: "Thông báo",
-          description: "Không có nhắc nhở CRC nào đến hạn hoặc quá hạn",
-        });
+        toast.info("Không có nhắc nhở CRC nào đến hạn hoặc quá hạn"); // Changed toast call
         return;
       }
 
@@ -396,19 +353,12 @@ const CRCReminders = () => {
         }
       }
 
-      toast({
-        title: "Thành công",
-        description: `Đã gửi ${sentCount} email nhắc nhở CRC và chuyển sang danh sách đã gửi`,
-      });
+      toast.success(`Đã gửi ${sentCount} email nhắc nhở CRC và chuyển sang danh sách đã gửi`); // Changed toast call
 
       refreshData();
     } catch (error) {
       console.error('Error sending CRC reminders:', error);
-      toast({
-        title: "Lỗi",
-        description: `Không thể gửi email nhắc nhở CRC: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể gửi email nhắc nhở CRC: ${error.message}`); // Changed toast call
     }
   };
 
@@ -421,19 +371,12 @@ const CRCReminders = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Xóa nhắc nhở CRC đã gửi thành công",
-      });
+      toast.success("Xóa nhắc nhở CRC đã gửi thành công"); // Changed toast call
 
       refreshData();
     } catch (error) {
       console.error('Error deleting sent CRC reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa nhắc nhở CRC đã gửi",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa nhắc nhở CRC đã gửi"); // Changed toast call
     }
   };
 

@@ -23,8 +23,12 @@ export const toCSV = (data: any[], fields: FieldConfig[]): string => {
         return '';
       }
       if (field.type === 'date' && value) {
-        // Ensure date is in YYYY-MM-DD format for Supabase
-        value = new Date(value).toISOString().split('T')[0];
+        const dateObj = new Date(value);
+        if (!isNaN(dateObj.getTime())) { // Check if it's a valid date
+          value = dateObj.toISOString().split('T')[0];
+        } else {
+          value = ''; // Return empty string for invalid dates
+        }
       } else if (field.type === 'boolean') {
         value = value ? 'true' : 'false';
       }

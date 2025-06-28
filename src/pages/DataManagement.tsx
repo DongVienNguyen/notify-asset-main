@@ -212,6 +212,7 @@ const DataManagement = () => {
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [isBackingUp, setIsBackingUp] = useState(false); // New state for backup loading
+  const [isUserContextSet, setIsUserContextSet] = useState(false); // New state to track user context setup
 
   const { user } = useSecureAuth();
   const navigate = useNavigate();
@@ -225,23 +226,27 @@ const DataManagement = () => {
       return;
     }
 
-    const setUserContext = async () => {
+    const setupUserContext = async () => {
       if (user && user.username) {
         try {
           await supabase.rpc('set_config', { setting_name: 'app.current_user', new_value: user.username, is_local: false });
+          setIsUserContextSet(true); // Mark as set
         } catch (error) {
           setMessage({ type: 'error', text: "Không thể thiết lập context người dùng" });
+          setIsUserContextSet(false); // Mark as failed
         }
+      } else {
+        setIsUserContextSet(false); // User not available yet
       }
     };
-    setUserContext();
+    setupUserContext();
   }, [user, navigate]);
 
   useEffect(() => {
-    if (selectedEntity && entityConfig[selectedEntity]) {
+    if (selectedEntity && entityConfig[selectedEntity] && isUserContextSet) { // Only load data if context is set
       loadData();
     }
-  }, [selectedEntity]);
+  }, [selectedEntity, isUserContextSet]); // Add isUserContextSet as a dependency
 
   useEffect(() => {
     loadStatistics();

@@ -20,11 +20,9 @@ export const useAssetEntry = () => {
   } = useAssetEntryForm();
   
   const {
-    message,
     isLoading,
     handleSubmit: submitAssets,
     handleTestEmail,
-    setMessage // Thêm setMessage vào đây
   } = useAssetSubmission();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,7 +33,6 @@ export const useAssetEntry = () => {
   return {
     formData,
     setFormData,
-    message,
     isLoading,
     isRestrictedTime,
     multipleAssets,
@@ -48,7 +45,6 @@ export const useAssetEntry = () => {
     handleSubmit,
     handleTestEmail,
     clearForm,
-    setMessage, // Trả về setMessage
     user
   };
 };

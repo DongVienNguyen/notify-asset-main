@@ -3,18 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatToDDMMYYYY } from '@/utils/dateUtils';
-
-interface Transaction {
-  id: string;
-  staff_code: string;
-  transaction_date: string;
-  parts_day: string;
-  room: string;
-  transaction_type: string;
-  asset_year: number;
-  asset_code: number;
-  note: string;
-}
+import { Transaction } from '@/types/asset'; // Import the new interface
 
 interface DetailedReportViewProps {
   transactions: Transaction[];

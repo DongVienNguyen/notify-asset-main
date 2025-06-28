@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useCurrentUser } from './useCurrentUser';
 import { useStaffData } from './useStaffData';
 import { useReminderData } from './useReminderData';
+import { toast } from 'sonner'; // Import toast from sonner
 
 export const useAssetReminderData = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,8 +22,12 @@ export const useAssetReminderData = () => {
         loadReminderData()
       ]);
 
+      // Removed the toast.success message here
+      // toast.success("Đã tải dữ liệu nhắc nhở tài sản");
+
     } catch (error) {
       console.error('Error loading asset reminder data:', error);
+      toast.error("Không thể tải dữ liệu nhắc nhở tài sản.");
     } finally {
       setIsLoading(false);
     }

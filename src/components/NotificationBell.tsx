@@ -47,8 +47,31 @@ export function NotificationBell() {
     queryKey: ['notifications', user?.username],
     queryFn: fetchNotifications,
     enabled: !!user,
-    refetchInterval: 300000, // 5 minutes
   });
+
+  useEffect(() => {
+    if (!user?.username) return;
+
+    const channel = supabase
+      .channel(`notifications:${user.username}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `recipient_username=eq.${user.username}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notifications', user.username] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.username, queryClient]);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 

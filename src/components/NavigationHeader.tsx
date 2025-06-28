@@ -43,43 +43,38 @@ export function NavigationHeader() {
     }
   };
 
-  const menuItems = [
-    { 
-      label: 'Thông báo Mượn/Xuất', 
-      path: '/asset-entry',
-      icon: Package
-    },
-    { 
-      label: 'Danh sách TS cần lấy', 
-      path: '/daily-report',
-      icon: Package
-    },
-    { 
-      label: 'Báo cáo TS đã mượn', 
-      path: '/borrow-report',
-      icon: Package
-    },
-    { 
-      label: 'Nhắc nhở Tài sản đến hạn', 
-      path: '/asset-reminders',
-      icon: Package
-    },
-    { 
-      label: 'Nhắc nhở Duyệt CRC', 
-      path: '/crc-reminders',
-      icon: Package
-    },
-    { 
-      label: 'Tài sản khác gửi kho', 
-      path: '/other-assets',
-      icon: Package
-    },
-    { 
-      label: 'Quản lý dữ liệu', 
-      path: '/data-management',
-      icon: Package
-    },
+  const allMenuItems = [
+    { label: 'Thông báo Mượn/Xuất', path: '/asset-entry', icon: Package },
+    { label: 'Danh sách TS cần lấy', path: '/daily-report', icon: Package },
+    { label: 'Nhắc nhở Tài sản đến hạn', path: '/asset-reminders', icon: Package },
+    { label: 'Nhắc nhở Duyệt CRC', path: '/crc-reminders', icon: Package },
+    { label: 'Báo cáo tài sản đã mượn', path: '/borrow-report', icon: Package },
+    { label: 'Tài sản, thùng khác gửi kho', path: '/other-assets', icon: Package },
+    { label: 'Quản lý dữ liệu', path: '/data-management', icon: Package },
   ];
+
+  const getVisibleMenuItems = () => {
+    if (!user) return [];
+    if (user.role === 'admin') {
+      return allMenuItems;
+    }
+
+    if (user.role === 'user') {
+      const standardUserDepartments = ['QLN', 'CMT8', 'NS', 'ĐS', 'LĐH', 'DVKH'];
+      if (standardUserDepartments.includes(user.department)) {
+        return allMenuItems.filter(item => 
+          item.path === '/asset-entry' || item.path === '/daily-report'
+        );
+      }
+
+      if (user.department === 'NQ') {
+        return allMenuItems.filter(item => item.path !== '/data-management');
+      }
+    }
+    return [];
+  };
+
+  const visibleMenuItems = getVisibleMenuItems();
 
   const handleMenuItemClick = () => {
     setIsMenuOpen(false);
@@ -110,7 +105,7 @@ export function NavigationHeader() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-white">
-                  {menuItems.map((item) => (
+                  {visibleMenuItems.map((item) => (
                     <DropdownMenuItem key={item.path} asChild>
                       <Link to={item.path} className="w-full flex items-center space-x-2">
                         <item.icon className="w-4 h-4" />
@@ -138,7 +133,7 @@ export function NavigationHeader() {
                     <SheetTitle>Menu</SheetTitle>
                   </SheetHeader>
                   <div className="space-y-2 pb-4">
-                    {menuItems.map((item) => (
+                    {visibleMenuItems.map((item) => (
                       <Link
                         key={item.path}
                         to={item.path}

@@ -1,11 +1,13 @@
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { Navigate } from 'react-router-dom';
+import { Staff } from '@/types/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  isAuthorized?: (user: Staff) => boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, isAuthorized }: ProtectedRouteProps) {
   const { user, loading } = useSecureAuth();
 
   if (loading) {
@@ -18,6 +20,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isAuthorized && !isAuthorized(user)) {
+    // If user is not authorized, redirect to the home page.
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

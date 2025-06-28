@@ -1,11 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// import { Toaster as ShadcnToaster } from "@/components/ui/toaster" // Removed
 import { Toaster } from "@/components/ui/sonner"
 
-import Layout from './components/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute'; // Changed from import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { useSecureAuth } from './hooks/useSecureAuth';
+import { isAdmin, isNqOrAdmin } from './utils/permissions';
 
 // Pages
 import Index from './pages/Index';
@@ -24,15 +23,14 @@ import NotFound from './pages/NotFound';
 const queryClient = new QueryClient();
 
 function App() {
-  const { user, isLoading, error } = useSecureAuth();
+  const { loading } = useSecureAuth();
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    // This could be a dedicated error page
-    return <div>Authentication Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (
@@ -45,17 +43,16 @@ function App() {
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/asset-entry" element={<ProtectedRoute><AssetEntry /></ProtectedRoute>} />
           <Route path="/daily-report" element={<ProtectedRoute><DailyReport /></ProtectedRoute>} />
-          <Route path="/borrow-report" element={<ProtectedRoute><BorrowReport /></ProtectedRoute>} />
-          <Route path="/asset-reminders" element={<ProtectedRoute><AssetReminders /></ProtectedRoute>} />
-          <Route path="/crc-reminders" element={<ProtectedRoute><CRCReminders /></ProtectedRoute>} />
-          <Route path="/other-assets" element={<ProtectedRoute><OtherAssets /></ProtectedRoute>} />
-          <Route path="/data-management" element={<ProtectedRoute><DataManagement /></ProtectedRoute>} />
+          <Route path="/borrow-report" element={<ProtectedRoute isAuthorized={isNqOrAdmin}><BorrowReport /></ProtectedRoute>} />
+          <Route path="/asset-reminders" element={<ProtectedRoute isAuthorized={isNqOrAdmin}><AssetReminders /></ProtectedRoute>} />
+          <Route path="/crc-reminders" element={<ProtectedRoute isAuthorized={isNqOrAdmin}><CRCReminders /></ProtectedRoute>} />
+          <Route path="/other-assets" element={<ProtectedRoute isAuthorized={isNqOrAdmin}><OtherAssets /></ProtectedRoute>} />
+          <Route path="/data-management" element={<ProtectedRoute isAuthorized={isAdmin}><DataManagement /></ProtectedRoute>} />
           <Route path="/error-report" element={<ProtectedRoute><ErrorReport /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-      {/* <ShadcnToaster /> */} {/* Removed */}
       <Toaster richColors />
     </QueryClientProvider>
   );

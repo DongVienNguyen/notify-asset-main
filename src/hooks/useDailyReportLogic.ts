@@ -36,9 +36,6 @@ export const useDailyReportLogic = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // State to drive the query
-  const [activeFilters, setActiveFilters] = useState<AssetTransactionFilters>({});
-
   const ITEMS_PER_PAGE = 10;
 
   const dateValues = useMemo(() => ({
@@ -53,46 +50,53 @@ export const useDailyReportLogic = () => {
     nextWorkingDayFormatted: formatToDDMMYYYY(dateValues.nextWorkingDay),
   }), [dateValues]);
 
-  // Effect to update active filters for non-custom types
-  useEffect(() => {
-    if (filterType === 'custom') {
-      setActiveFilters({}); // Clear filters for custom type until applied
-      return;
-    }
-
+  // Derive filters based on filterType and customFilters
+  const currentQueryFilters = useMemo(() => {
     const filters: AssetTransactionFilters = {};
     const todayStr = dateValues.gmtPlus7.toISOString().split('T')[0];
     const morningTargetStr = dateValues.morningTargetDate.toISOString().split('T')[0];
     const nextWorkingDayStr = dateValues.nextWorkingDay.toISOString().split('T')[0];
 
-    switch (filterType) {
-      case 'qln_pgd_next_day':
-        filters.isQlnPgdNextDay = true;
-        filters.startDate = morningTargetStr;
-        break;
-      case 'morning':
-        filters.startDate = morningTargetStr;
-        filters.endDate = morningTargetStr;
-        filters.parts_day = 'Sáng';
-        break;
-      case 'afternoon':
-        filters.startDate = nextWorkingDayStr;
-        filters.endDate = nextWorkingDayStr;
-        filters.parts_day = 'Chiều';
-        break;
-      case 'today':
-        filters.startDate = todayStr;
-        filters.endDate = todayStr;
-        break;
-      case 'next_day':
-        filters.startDate = nextWorkingDayStr;
-        filters.endDate = nextWorkingDayStr;
-        break;
-      default:
-        break;
+    if (filterType === 'custom') {
+      if (customFilters.start && customFilters.end) {
+        filters.startDate = customFilters.start;
+        filters.endDate = customFilters.end;
+        filters.parts_day = customFilters.parts_day as 'Sáng' | 'Chiều' | 'all';
+      } else {
+        // If custom filters are not fully set, return an empty object to disable query
+        return {};
+      }
+    } else {
+      switch (filterType) {
+        case 'qln_pgd_next_day':
+          filters.isQlnPgdNextDay = true;
+          filters.startDate = morningTargetStr;
+          break;
+        case 'morning':
+          filters.startDate = morningTargetStr;
+          filters.endDate = morningTargetStr;
+          filters.parts_day = 'Sáng';
+          break;
+        case 'afternoon':
+          filters.startDate = nextWorkingDayStr;
+          filters.endDate = nextWorkingDayStr;
+          filters.parts_day = 'Chiều';
+          break;
+        case 'today':
+          filters.startDate = todayStr;
+          filters.endDate = todayStr;
+          break;
+        case 'next_day':
+          filters.startDate = nextWorkingDayStr;
+          filters.endDate = nextWorkingDayStr;
+          break;
+        default:
+          // Should not happen if filterType is always one of the defined cases
+          return {};
+      }
     }
-    setActiveFilters(filters);
-  }, [filterType, dateValues]);
+    return filters;
+  }, [filterType, customFilters, dateValues]); // Dependencies for memoization
 
   // Effect to initialize custom filter dates
   useEffect(() => {
@@ -105,9 +109,9 @@ export const useDailyReportLogic = () => {
 
   // Data fetching with React Query
   const { data: transactions = [], isLoading } = useQuery<Transaction[], Error>({
-    queryKey: ['assetTransactions', activeFilters],
-    queryFn: () => getAssetTransactions(activeFilters),
-    enabled: !!activeFilters.startDate, // Only run query if filters have a start date
+    queryKey: ['assetTransactions', currentQueryFilters],
+    queryFn: () => getAssetTransactions(currentQueryFilters),
+    enabled: !!currentQueryFilters.startDate, // Only run query if filters have a start date
     staleTime: 5 * 60 * 1000, // 5 minutes
     onError: (error) => {
       console.error('Error loading transactions:', error);
@@ -133,11 +137,7 @@ export const useDailyReportLogic = () => {
   // Handler for the custom filter button
   const handleCustomFilter = () => {
     if (customFilters.start && customFilters.end) {
-      setActiveFilters({
-        startDate: customFilters.start,
-        endDate: customFilters.end,
-        parts_day: customFilters.parts_day as 'Sáng' | 'Chiều' | 'all',
-      });
+      setFilterType('custom'); // This will trigger currentQueryFilters re-evaluation and then useQuery
     } else {
       toast.warning("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
     }

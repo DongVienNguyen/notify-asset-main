@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { validateInput } from '@/utils/inputValidation';
 import { logSecurityEvent } from '@/utils/secureAuthUtils';
@@ -11,14 +12,6 @@ export interface AssetTransaction {
   asset_year: number;
   asset_code: number;
   note?: string;
-}
-
-export interface AssetTransactionFilters {
-  staffCode?: string;
-  startDate?: string;
-  endDate?: string;
-  parts_day?: 'Sáng' | 'Chiều' | 'all';
-  isQlnPgdNextDay?: boolean;
 }
 
 export const saveAssetTransactions = async (transactions: AssetTransaction[]) => {
@@ -64,37 +57,20 @@ export const saveAssetTransactions = async (transactions: AssetTransaction[]) =>
   }
 };
 
-export const getAssetTransactions = async (filters: AssetTransactionFilters = {}) => {
+export const getAssetTransactions = async (staffCode?: string) => {
   try {
-    let query = supabase.from('asset_transactions').select('*');
+    let query = supabase
+      .from('asset_transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (filters.staffCode) {
-      if (!validateInput.isValidUsername(filters.staffCode)) {
+    if (staffCode) {
+      // Validate staff code
+      if (!validateInput.isValidUsername(staffCode)) {
         throw new Error('Mã nhân viên không hợp lệ');
       }
-      query = query.eq('staff_code', validateInput.sanitizeString(filters.staffCode));
+      query = query.eq('staff_code', validateInput.sanitizeString(staffCode));
     }
-
-    if (filters.startDate) {
-      query = query.gte('transaction_date', filters.startDate);
-    }
-    if (filters.endDate) {
-      query = query.lte('transaction_date', filters.endDate);
-    }
-
-    if (filters.isQlnPgdNextDay && filters.startDate) {
-      const pgdRooms = ['CMT8', 'NS', 'ĐS', 'LĐH'].map(r => `'${r}'`).join(',');
-      query = query
-        .eq('transaction_date', filters.startDate)
-        .or(`parts_day.eq.Sáng,and(parts_day.eq.Chiều,room.in.(${pgdRooms}))`);
-    } else if (filters.parts_day && filters.parts_day !== 'all') {
-      query = query.eq('parts_day', filters.parts_day);
-    }
-
-    // Add sorting at the end
-    query = query.order('room', { ascending: true })
-                 .order('asset_year', { ascending: true })
-                 .order('asset_code', { ascending: true });
 
     const { data, error } = await query;
 
@@ -103,7 +79,7 @@ export const getAssetTransactions = async (filters: AssetTransactionFilters = {}
       throw error;
     }
 
-    return data || [];
+    return data;
   } catch (error) {
     logSecurityEvent('ASSET_TRANSACTION_FETCH_EXCEPTION', { error: (error as Error).message });
     throw error;

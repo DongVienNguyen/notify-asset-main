@@ -35,20 +35,46 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
     onRoomDetected,
   });
 
-  const handleImageProcessed = (result: { assetCodes: string[]; room?: string }) => {
+  const handleImageProcessed = (result: { assetCodes: string[]; detectedRoom?: string }) => {
     if (result.assetCodes.length > 0) {
       toast.success(
         "Phát hiện mã tài sản thành công!",
         { description: `Đã tìm thấy ${result.assetCodes.length} mã tài sản` }
       );
+    } else {
+      toast.info("Không tìm thấy mã tài sản nào trong hình ảnh.");
     }
     
-    if (result.room) {
+    if (result.detectedRoom) {
       toast.success(
         "Phát hiện phòng thành công!",
-        { description: `Đã tìm thấy phòng: ${result.room}` }
+        { description: `Đã tìm thấy phòng: ${result.detectedRoom}` }
       );
+    } else {
+      toast.info("Không tìm thấy thông tin phòng trong hình ảnh.");
     }
+  };
+
+  const handleProcessImages = async (files: FileList) => {
+    const result = await processImages(files);
+    if (result) {
+      handleImageProcessed(result);
+    }
+  };
+
+  const handleOpenCamera = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Suggests rear camera on mobile
+    input.onchange = async (e) => {
+      const target = e.target as HTMLInputElement;
+      const result = await processImages(target.files);
+      if (result) {
+        handleImageProcessed(result);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -61,8 +87,8 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
           isProcessingImage={isProcessingImage}
           isDialogOpen={isDialogOpen}
           setIsDialogOpen={setIsDialogOpen}
-          openCamera={openCamera}
-          processImages={processImages}
+          openCamera={handleOpenCamera} // Use the new handler
+          processImages={handleProcessImages} // Use the new handler
         />
       </div>
       

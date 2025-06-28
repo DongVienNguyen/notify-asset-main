@@ -9,7 +9,8 @@ import {
   getDateBasedOnTime,
   getDefaultEndDate
 } from '@/utils/dateUtils';
-import { groupTransactions, getFilterDisplayTextUtil, Transaction } from '@/utils/reportUtils';
+import { groupTransactions, getFilterDisplayTextUtil } from '@/utils/reportUtils';
+import { Transaction } from '@/types/asset'; // Import the new interface
 
 export const useDailyReportLogic = () => {
   // UI State

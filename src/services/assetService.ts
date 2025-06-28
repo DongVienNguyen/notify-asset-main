@@ -1,17 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { validateInput } from '@/utils/inputValidation';
 import { logSecurityEvent } from '@/utils/secureAuthUtils';
-
-export interface AssetTransaction {
-  staff_code: string;
-  transaction_date: string;
-  parts_day: string;
-  room: string;
-  transaction_type: string;
-  asset_year: number;
-  asset_code: number;
-  note?: string;
-}
+import { AssetTransactionPayload } from '@/types/asset'; // Import the new interface
 
 export interface AssetTransactionFilters {
   staffCode?: string;
@@ -21,7 +11,7 @@ export interface AssetTransactionFilters {
   isQlnPgdNextDay?: boolean;
 }
 
-export const saveAssetTransactions = async (transactions: AssetTransaction[]) => {
+export const saveAssetTransactions = async (transactions: AssetTransactionPayload[]) => { // Use AssetTransactionPayload
   try {
     // Validate all transactions before saving
     for (const transaction of transactions) {

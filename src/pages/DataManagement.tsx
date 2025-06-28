@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
 import JSZip from 'jszip';
 import DateInput from '@/components/DateInput';
+import { toCSV, fromCSV } from '@/utils/csvUtils'; // Import new CSV utilities
 
 type TableName = keyof Database['public']['Tables'];
 
@@ -425,17 +426,9 @@ const DataManagement = () => {
       return;
     }
     const config = entityConfig[selectedEntity];
-    const headers = config.fields.map(field => field.label).join(',');
-    const rows = filteredData.map(item =>
-      config.fields.map(field => {
-        let value = item[field.key];
-        if (field.type === 'date' && value) {
-          value = new Date(value).toLocaleDateString('vi-VN');
-        }
-        return `"${value?.toString().replace(/"/g, '""') || ''}"`;
-      }).join(',')
-    );
-    const csvContent = [headers, ...rows].join('\n');
+    // Use the new toCSV utility, passing the data and field configurations
+    const csvContent = toCSV(filteredData, config.fields);
+    
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -452,9 +445,12 @@ const DataManagement = () => {
     try {
       const zip = new JSZip();
       for (const key in entityConfig) {
-        const { data: tableData, error } = await supabase.from(entityConfig[key].entity as any).select('*');
+        const config = entityConfig[key];
+        const { data: tableData, error } = await supabase.from(config.entity as any).select('*');
         if (error) throw error;
-        zip.file(`${key}.json`, JSON.stringify(tableData, null, 2));
+        // Convert data to CSV using the new utility
+        const csvContent = toCSV(tableData || [], config.fields);
+        zip.file(`${key}.csv`, csvContent); // Save as .csv
       }
       const content = await zip.generateAsync({ type: "blob" });
       const link = document.createElement('a');
@@ -491,17 +487,21 @@ const DataManagement = () => {
     try {
       const zip = await JSZip.loadAsync(restoreFile);
       for (const key in entityConfig) {
-        const fileName = `${key}.json`;
+        const config = entityConfig[key];
+        const fileName = `${key}.csv`; // Expect .csv files
         const file = zip.file(fileName);
         if (file) {
           const content = await file.async("text");
-          const dataToRestore = JSON.parse(content);
+          // Parse CSV content using the new utility
+          const dataToRestore = fromCSV(content, config.fields);
           
-          const { error: deleteError } = await supabase.from(entityConfig[key].entity as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          // Delete existing data
+          const { error: deleteError } = await supabase.from(config.entity as any).delete().neq('id', '00000000-0000-0000-0000-000000000000');
           if (deleteError) throw deleteError;
 
+          // Insert new data
           if (dataToRestore.length > 0) {
-            const { error: insertError } = await supabase.from(entityConfig[key].entity as any).insert(dataToRestore);
+            const { error: insertError } = await supabase.from(config.entity as any).insert(dataToRestore);
             if (insertError) throw insertError;
           }
         }

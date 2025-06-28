@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { sendAssetNotificationEmail } from '@/services/emailService';
-import { isDateDueOrOverdue } from './dateUtils';
+import { isDayMonthDueOrOverdue } from '@/utils/dateUtils'; // Corrected import path
 import { getEmailTemplate } from './emailTemplates';
 import { getRecipients } from './recipientUtils';
 
@@ -36,7 +35,7 @@ export const sendReminders = async (
 ) => {
   try {
     // Get reminders that are due or overdue (not just today)
-    const dueReminders = reminders.filter(reminder => isDateDueOrOverdue(reminder.ngay_den_han));
+    const dueReminders = reminders.filter(reminder => isDayMonthDueOrOverdue(reminder.ngay_den_han));
     
     if (dueReminders.length === 0) {
       toast({

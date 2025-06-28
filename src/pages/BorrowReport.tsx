@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -48,8 +47,7 @@ const BorrowReport = () => {
           />
 
           <BorrowReportTable
-            filteredTransactions={filteredTransactions}
-            paginatedTransactions={paginatedTransactions}
+            transactions={paginatedTransactions} // Changed from filteredTransactions to paginatedTransactions and renamed prop
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
             totalPages={totalPages}

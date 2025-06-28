@@ -1,9 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { validateInput } from '@/utils/inputValidation';
 import { logSecurityEvent } from '@/utils/secureAuthUtils';
+import { Staff } from '@/types/auth'; // Import Staff type
 
-export const setCurrentUserContext = async (user: any) => {
+export const setCurrentUserContext = async (user: Staff) => { // Change user: any to user: Staff
   if (!user?.username) {
     logSecurityEvent('INVALID_USER_CONTEXT_ATTEMPT', { user: user?.username });
     return false;

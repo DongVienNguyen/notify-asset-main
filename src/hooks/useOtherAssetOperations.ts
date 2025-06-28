@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast.tsx'; // Corrected import path with .tsx extension
+import { toast } from 'sonner';
 import { useAssetHistory } from '@/hooks/useAssetHistory';
 import { setCurrentUserContext, createNotesWithTimestamp } from '@/utils/otherAssetUtils';
 
@@ -18,7 +18,6 @@ interface OtherAsset {
 }
 
 export const useOtherAssetOperations = (user: any) => {
-  const { toast } = useToast();
   const { saveHistory } = useAssetHistory(user);
 
   const loadAssets = async () => {
@@ -44,10 +43,8 @@ export const useOtherAssetOperations = (user: any) => {
 
     } catch (error) {
       console.error('Error loading data:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể tải dữ liệu: " + (error as Error).message,
-        variant: "destructive",
+      toast.error("Không thể tải dữ liệu", {
+        description: (error as Error).message,
       });
       return [];
     }
@@ -61,28 +58,22 @@ export const useOtherAssetOperations = (user: any) => {
     console.log('=== STARTING SAVE OPERATION ===');
     
     if (!newAsset.name.trim()) {
-      toast({
-        title: "Lỗi",
+      toast.error("Lỗi", {
         description: "Vui lòng nhập tên tài sản",
-        variant: "destructive",
       });
       return false;
     }
 
     if (!newAsset.deposit_date) {
-      toast({
-        title: "Lỗi",
+      toast.error("Lỗi", {
         description: "Vui lòng chọn ngày gửi kho",
-        variant: "destructive",
       });
       return false;
     }
 
     if (editingAsset && !changeReason.trim()) {
-      toast({
-        title: "Lỗi",
+      toast.error("Lỗi", {
         description: "Vui lòng nhập lý do thay đổi",
-        variant: "destructive",
       });
       return false;
     }
@@ -95,16 +86,16 @@ export const useOtherAssetOperations = (user: any) => {
       console.log('DEBUG: newAsset.deposit_date before processing:', newAsset.deposit_date);
       const assetData = {
         name: newAsset.name.trim(),
-        deposit_date: newAsset.deposit_date.trim() === '' ? null : newAsset.deposit_date, // Chuyển chuỗi rỗng hoặc chỉ khoảng trắng thành NULL
+        deposit_date: newAsset.deposit_date.trim() === '' ? null : newAsset.deposit_date,
         depositor: newAsset.depositor?.trim() || null,
         deposit_receiver: newAsset.deposit_receiver?.trim() || null,
-        withdrawal_date: newAsset.withdrawal_date.trim() === '' ? null : newAsset.withdrawal_date, // Áp dụng tương tự cho withdrawal_date
+        withdrawal_date: newAsset.withdrawal_date.trim() === '' ? null : newAsset.withdrawal_date,
         withdrawal_deliverer: newAsset.withdrawal_deliverer?.trim() || null,
         withdrawal_receiver: newAsset.withdrawal_receiver?.trim() || null,
         notes: notesWithTimestamp
       };
       console.log('DEBUG: assetData.deposit_date sent to DB:', assetData.deposit_date);
-      console.log('DEBUG: Full assetData payload:', assetData); // Log toàn bộ payload
+      console.log('DEBUG: Full assetData payload:', assetData);
 
       if (editingAsset) {
         const { data: updatedAsset, error: updateError } = await supabase
@@ -144,8 +135,7 @@ export const useOtherAssetOperations = (user: any) => {
           });
         }
         
-        toast({
-          title: "Thành công",
+        toast.success("Thành công", {
           description: "Cập nhật tài sản thành công",
         });
       } else {
@@ -170,8 +160,7 @@ export const useOtherAssetOperations = (user: any) => {
           });
         }
         
-        toast({
-          title: "Thành công",
+        toast.success("Thành công", {
           description: "Thêm tài sản thành công",
         });
       }
@@ -180,10 +169,8 @@ export const useOtherAssetOperations = (user: any) => {
     } catch (error) {
       console.error('=== SAVE OPERATION ERROR ===');
       console.error('Error:', error);
-      toast({
-        title: "Lỗi",
+      toast.error("Lỗi", {
         description: "Không thể lưu tài sản: " + (error as Error).message,
-        variant: "destructive",
       });
       return false;
     }
@@ -191,10 +178,8 @@ export const useOtherAssetOperations = (user: any) => {
 
   const deleteAsset = async (asset: OtherAsset) => {
     if (!user || user.role !== 'admin') {
-      toast({
-        title: "Không có quyền",
+      toast.error("Không có quyền", {
         description: "Chỉ admin mới có thể xóa",
-        variant: "destructive",
       });
       return false;
     }
@@ -269,8 +254,7 @@ export const useOtherAssetOperations = (user: any) => {
         throw deleteError;
       }
 
-      toast({
-        title: "Thành công",
+      toast.success("Thành công", {
         description: "Xóa tài sản thành công và đã lưu lịch sử",
       });
       
@@ -278,10 +262,8 @@ export const useOtherAssetOperations = (user: any) => {
     } catch (error) {
       console.error('=== DELETE ERROR ===');
       console.error('Error:', error);
-      toast({
-        title: "Lỗi",
+      toast.error("Lỗi", {
         description: "Không thể xóa tài sản: " + (error as Error).message,
-        variant: "destructive",
       });
       return false;
     }

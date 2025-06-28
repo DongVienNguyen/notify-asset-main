@@ -3,7 +3,7 @@ import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { FormData } from '@/types/assetSubmission';
 import { validateAssetSubmission } from '@/utils/assetSubmissionValidation';
 import { submitAssetTransactions } from '@/services/assetSubmissionService';
-import { performEmailTest } => '@/services/emailTestService';
+import { performEmailTest } from '@/services/emailTestService'; // Đã sửa lỗi cú pháp ở đây
 import { toast } from 'sonner'; // Import toast directly from sonner
 
 export const useAssetSubmission = () => {

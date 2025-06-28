@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner'; // Changed from '@/components/ui/use-toast'
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { sendErrorReport } from '@/services/emailService';
@@ -25,7 +25,7 @@ const ErrorReport = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,21 +40,13 @@ const ErrorReport = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Lỗi file",
-          description: "Vui lòng chọn file hình ảnh",
-          variant: "destructive"
-        });
+        toast.error("Vui lòng chọn file hình ảnh");
         return;
       }
 
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File quá lớn",
-          description: "Vui lòng chọn file nhỏ hơn 10MB",
-          variant: "destructive"
-        });
+        toast.error("Vui lòng chọn file nhỏ hơn 10MB");
         return;
       }
 
@@ -119,10 +111,7 @@ const ErrorReport = () => {
       );
 
       if (result.success) {
-        toast({
-          title: "Báo lỗi thành công",
-          description: "Báo lỗi đã được gửi thành công. Chúng tôi sẽ xem xét và phản hồi sớm nhất.",
-        });
+        toast.success("Báo lỗi đã được gửi thành công. Chúng tôi sẽ xem xét và phản hồi sớm nhất.");
         
         // Reset form
         setErrorContent('');

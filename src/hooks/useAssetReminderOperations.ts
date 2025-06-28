@@ -1,6 +1,5 @@
-
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner'; // Changed import from useToast to toast from sonner
 
 // Asset Reminder interface
 interface AssetReminder {
@@ -14,7 +13,7 @@ interface AssetReminder {
 }
 
 export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed this line
 
   const handleSubmit = async (
     tenTaiSan: string,
@@ -24,11 +23,7 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
     editingReminder: AssetReminder | null
   ) => {
     if (!tenTaiSan || !ngayDenHan) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin bắt buộc",
-        variant: "destructive",
-      });
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc"); // Changed toast usage
       return false;
     }
 
@@ -54,10 +49,7 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
           throw error;
         }
 
-        toast({
-          title: "Thành công",
-          description: "Cập nhật nhắc nhở tài sản thành công",
-        });
+        toast.success("Cập nhật nhắc nhở tài sản thành công"); // Changed toast usage
       } else {
         const { error } = await supabase
           .from('asset_reminders')
@@ -68,21 +60,14 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
           throw error;
         }
 
-        toast({
-          title: "Thành công",
-          description: "Thêm nhắc nhở tài sản thành công",
-        });
+        toast.success("Thêm nhắc nhở tài sản thành công"); // Changed toast usage
       }
 
       loadData();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving asset reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: `Không thể lưu nhắc nhở tài sản: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error(`Không thể lưu nhắc nhở tài sản: ${error.message}`); // Changed toast usage
       return false;
     }
   };
@@ -96,19 +81,12 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Xóa nhắc nhở tài sản thành công",
-      });
+      toast.success("Xóa nhắc nhở tài sản thành công"); // Changed toast usage
 
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting asset reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa nhắc nhở tài sản",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa nhắc nhở tài sản"); // Changed toast usage
     }
   };
 
@@ -121,19 +99,12 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Thành công",
-        description: "Xóa nhắc nhở tài sản đã gửi thành công",
-      });
+      toast.success("Xóa nhắc nhở tài sản đã gửi thành công"); // Changed toast usage
 
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting sent asset reminder:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể xóa nhắc nhở tài sản đã gửi",
-        variant: "destructive",
-      });
+      toast.error("Không thể xóa nhắc nhở tài sản đã gửi"); // Changed toast usage
     }
   };
 

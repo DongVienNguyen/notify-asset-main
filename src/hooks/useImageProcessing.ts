@@ -54,24 +54,14 @@ export const useImageProcessing = ({ onAssetCodesDetected, onRoomDetected }: Use
     }
   };
 
-  const openCamera = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment'; // Suggests rear camera on mobile
-    input.onchange = async (e) => { // Make this async to await processImages
-      const target = e.target as HTMLInputElement;
-      const result = await processImages(target.files);
-      // The component using this hook will handle the toast based on the result
-    };
-    input.click();
-  };
+  // The openCamera function is now handled directly in AssetCodeInputs.tsx
+  // and is no longer needed here as it was a duplicate.
 
   return {
     isProcessingImage,
     isDialogOpen,
     setIsDialogOpen,
     processImages,
-    openCamera,
+    // openCamera, // Removed as it's redundant
   };
 };

@@ -1,52 +1,52 @@
-
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import React from 'react';
+import { format, parseISO, isValid } from 'date-fns';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface DateInputProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: string; // Expected format: YYYY-MM-DD
+  onChange: (value: string) => void; // Returns format: YYYY-MM-DD
   placeholder?: string;
   className?: string;
 }
 
 const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, className }) => {
-  const [displayValue, setDisplayValue] = useState(value);
+  // Convert YYYY-MM-DD string to Date object for react-day-picker
+  // parseISO creates a Date object in local time.
+  const selectedDate = value ? (isValid(parseISO(value)) ? parseISO(value) : undefined) : undefined;
 
-  const formatDateInput = (input: string) => {
-    // Remove all non-digit characters
-    const digits = input.replace(/\D/g, '');
-    
-    // Auto-format when user enters 3 or 4 digits to dd/MM format
-    if (digits.length >= 3 && digits.length <= 4) {
-      const day = digits.substring(0, 2);
-      const month = digits.substring(2);
-      return `${day}/${month}`;
-    }
-    
-    return digits;
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    
-    // If user is typing and has 3-4 digits, auto-format to dd/MM
-    if (/^\d{3,4}$/.test(input.replace(/\D/g, ''))) {
-      const formatted = formatDateInput(input);
-      setDisplayValue(formatted);
-      onChange(formatted);
-    } else {
-      setDisplayValue(input);
-      onChange(input);
-    }
+  const handleDateSelect = (date: Date | undefined) => {
+    // Convert selected Date object (local time) back to YYYY-MM-DD string
+    onChange(date ? format(date, 'yyyy-MM-dd') : '');
   };
 
   return (
-    <Input
-      value={displayValue}
-      onChange={handleInputChange}
-      placeholder={placeholder || "dd/MM"}
-      className={className}
-    />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !value && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? format(parseISO(value), "dd/MM/yyyy") : (placeholder || "dd/MM/yyyy")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleDateSelect}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
 

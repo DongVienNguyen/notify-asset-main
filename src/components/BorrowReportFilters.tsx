@@ -1,10 +1,10 @@
-
 import React, { useCallback } from 'react';
 import { Filter, Building2, Calendar } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import DateInput from '@/components/DateInput'; // Import the new DateInput
 
 interface DateRange {
   start: string;
@@ -26,12 +26,12 @@ const BorrowReportFilters = React.memo(({
   setSelectedRoom, 
   rooms 
 }: BorrowReportFiltersProps) => {
-  const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateRange(prev => ({ ...prev, start: e.target.value }));
+  const handleStartDateChange = useCallback((dateString: string) => { // dateString is YYYY-MM-DD
+    setDateRange(prev => ({ ...prev, start: dateString }));
   }, [setDateRange]);
 
-  const handleEndDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateRange(prev => ({ ...prev, end: e.target.value }));
+  const handleEndDateChange = useCallback((dateString: string) => { // dateString is YYYY-MM-DD
+    setDateRange(prev => ({ ...prev, end: dateString }));
   }, [setDateRange]);
 
   return (
@@ -51,10 +51,10 @@ const BorrowReportFilters = React.memo(({
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Từ ngày
               </Label>
-              <Input
-                type="date"
+              <DateInput
                 value={dateRange.start}
                 onChange={handleStartDateChange}
+                placeholder="Chọn ngày bắt đầu"
               />
             </div>
             
@@ -63,10 +63,10 @@ const BorrowReportFilters = React.memo(({
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Đến ngày
               </Label>
-              <Input
-                type="date"
+              <DateInput
                 value={dateRange.end}
                 onChange={handleEndDateChange}
+                placeholder="Chọn ngày kết thúc"
               />
             </div>
           </div>

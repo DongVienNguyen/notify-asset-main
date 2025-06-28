@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getAssetTransactions } from '@/services/assetService';
+import { format, addDays, getDay } from 'date-fns'; // Add format, addDays, getDay
 
 interface AssetTransaction {
   id: string;
@@ -36,13 +36,13 @@ export const useBorrowReportData = () => {
 
   // Memoized function to get next working day
   const getNextWorkingDay = useCallback((date: Date) => {
-    const nextDay = new Date(date);
-    nextDay.setDate(date.getDate() + 1);
+    const nextDay = new Date(date); // Creates a copy
+    nextDay.setDate(date.getDate() + 1); // Adds 1 day to the copy
     
-    if (nextDay.getDay() === 6) {
-      nextDay.setDate(nextDay.getDate() + 2);
-    } else if (nextDay.getDay() === 0) {
-      nextDay.setDate(nextDay.getDate() + 1);
+    if (getDay(nextDay) === 6) { // If it's Saturday
+      nextDay.setDate(nextDay.getDate() + 2); // Add 2 more days (to Monday)
+    } else if (getDay(nextDay) === 0) { // If it's Sunday
+      nextDay.setDate(nextDay.getDate() + 1); // Add 1 more day (to Monday)
     }
     
     return nextDay;
@@ -78,17 +78,22 @@ export const useBorrowReportData = () => {
   // Initialize default date range with GMT+7
   useEffect(() => {
     const now = new Date();
-    const gmtPlus7Offset = 7 * 60;
-    const localOffset = now.getTimezoneOffset();
+    // Calculate GMT+7 date
+    const gmtPlus7Offset = 7 * 60; // 7 hours in minutes
+    const localOffset = now.getTimezoneOffset(); // Offset in minutes for local timezone
     const totalOffset = gmtPlus7Offset + localOffset;
     
     const gmtPlus7Date = new Date(now.getTime() + (totalOffset * 60 * 1000));
-    const today = new Date(gmtPlus7Date.getFullYear(), gmtPlus7Date.getMonth(), gmtPlus7Date.getDate());
-    const nextWorkingDay = getNextWorkingDay(today);
+    
+    // Get the start of the day for GMT+7
+    const todayGMT7 = new Date(gmtPlus7Date.getFullYear(), gmtPlus7Date.getMonth(), gmtPlus7Date.getDate());
+    
+    // Calculate next working day based on todayGMT7
+    const nextWorkingDayGMT7 = getNextWorkingDay(todayGMT7);
     
     setDateRange({
-      start: today.toISOString().split('T')[0],
-      end: nextWorkingDay.toISOString().split('T')[0]
+      start: format(todayGMT7, 'yyyy-MM-dd'), // Format to YYYY-MM-DD
+      end: format(nextWorkingDayGMT7, 'yyyy-MM-dd') // Format to YYYY-MM-DD
     });
   }, [getNextWorkingDay]);
 

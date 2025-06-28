@@ -133,6 +133,16 @@ const CRCReminders = () => {
     return `${greeting}Có yêu cầu duyệt CRC loại ${loaiCRC} cần thực hiện vào ngày ${ngayThucHien}, các bạn hãy hoàn thành duyệt CRC trước 14 giờ 00 ngày ${ngayThucHien}. Trân trọng cám ơn.`;
   };
 
+  const createNotification = async (recipientUsername: string, title: string, message: string) => {
+    if (!recipientUsername) return;
+    await supabase.from('notifications').insert({
+      recipient_username: recipientUsername,
+      title,
+      message,
+      notification_type: 'crc_reminder',
+    });
+  };
+
   const sendSingleReminder = async (reminder: any) => {
     setMessage({ type: '', text: '' });
     try {
@@ -141,32 +151,39 @@ const CRCReminders = () => {
         return;
       }
 
-      const getRecipientEmail = (name: string, staffList: any[]) => {
+      const getRecipient = (name: string, staffList: any[]) => {
         if (!name || name === 'Chưa chọn') return null;
-        const member = staffList.find(m => m.ten_nv === name);
-        return member ? `${member.email}.hvu@vietcombank.com.vn` : null;
+        return staffList.find(m => m.ten_nv === name) || null;
       };
 
-      const recipients = [
-        getRecipientEmail(reminder.ldpcrc, staff.ldpcrc),
-        getRecipientEmail(reminder.cbcrc, staff.cbcrc),
-        getRecipientEmail(reminder.quycrc, staff.quycrc)
-      ].filter(Boolean) as string[];
+      const recipientsInfo = [
+        getRecipient(reminder.ldpcrc, staff.ldpcrc),
+        getRecipient(reminder.cbcrc, staff.cbcrc),
+        getRecipient(reminder.quycrc, staff.quycrc)
+      ].filter(Boolean);
 
-      if (recipients.length === 0) {
+      const recipientEmails = recipientsInfo.map(r => `${r.email}.hvu@vietcombank.com.vn`);
+
+      if (recipientEmails.length === 0) {
         setMessage({ type: 'error', text: "Không tìm thấy người nhận email" });
         return;
       }
 
       const subject = `Nhắc nhở duyệt CRC: ${reminder.loai_bt_crc}`;
       const content = getEmailTemplate(reminder.loai_bt_crc, reminder.ngay_thuc_hien, reminder.ldpcrc || 'Chưa chọn', reminder.cbcrc || 'Chưa chọn', reminder.quycrc || 'Chưa chọn');
-      const emailResult = await sendAssetNotificationEmail(recipients, subject, content);
+      const emailResult = await sendAssetNotificationEmail(recipientEmails, subject, content);
       
       if (emailResult.success) {
         const sentData = { ...reminder, is_sent: true, sent_date: new Date().toISOString().split('T')[0] };
         delete sentData.id;
         await supabase.from('sent_crc_reminders').insert([sentData]);
         await supabase.from('crc_reminders').delete().eq('id', reminder.id);
+        
+        const notifMessage = `Yêu cầu duyệt CRC loại "${reminder.loai_bt_crc}" cần thực hiện vào ngày ${reminder.ngay_thuc_hien}.`;
+        for (const recipient of recipientsInfo) {
+          createNotification(recipient.email, 'Nhắc nhở duyệt CRC', notifMessage);
+        }
+
         setMessage({ type: 'success', text: "Đã gửi email và chuyển sang danh sách đã gửi" });
         refreshData();
       } else {

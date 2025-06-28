@@ -53,6 +53,41 @@ const AssetReminders = () => {
     sendReminders
   } = useAssetReminderEmail(staff, loadData, showMessage);
 
+  const createNotification = async (recipientUsername: string, title: string, message: string) => {
+    if (!recipientUsername) return;
+    await supabase.from('notifications').insert({
+      recipient_username: recipientUsername,
+      title,
+      message,
+      notification_type: 'asset_reminder',
+    });
+  };
+
+  const handleSendSingleReminder = async (reminder: AssetReminder) => {
+    const success = await sendSingleReminder(reminder);
+    if (success) {
+      const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
+      const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
+      const message = `Tài sản "${reminder.ten_ts}" đã đến hạn.`;
+      if (cbkhUser) createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
+      if (cbqlnUser) createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+    }
+  };
+
+  const handleSendAllReminders = async () => {
+    const dueReminders = reminders.filter(r => isDateDueOrOverdue(r.ngay_den_han));
+    const success = await sendReminders(dueReminders);
+    if (success) {
+      for (const reminder of dueReminders) {
+        const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
+        const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
+        const message = `Tài sản "${reminder.ten_ts}" đã đến hạn.`;
+        if (cbkhUser) createNotification(cbkhUser.email, 'Nhắc nhở tài sản', message);
+        if (cbqlnUser) createNotification(cbqlnUser.email, 'Nhắc nhở tài sản', message);
+      }
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sentSearchTerm, setSentSearchTerm] = useState('');
   const [editingReminder, setEditingReminder] = useState<AssetReminder | null>(null);
@@ -166,10 +201,10 @@ const AssetReminders = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Danh sách nhắc nhở ({filteredReminders.length})</CardTitle>
-            <Button onClick={() => sendReminders(reminders)} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>Gửi email</Button>
+            <Button onClick={handleSendAllReminders} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>Gửi email</Button>
           </CardHeader>
           <CardContent>
-            <AssetReminderTable filteredReminders={filteredReminders} isLoading={isLoading} onEdit={handleEdit} onDelete={handleDelete} onSendSingle={sendSingleReminder} isDayMonthDueOrOverdue={isDateDueOrOverdue} />
+            <AssetReminderTable filteredReminders={filteredReminders} isLoading={isLoading} onEdit={handleEdit} onDelete={handleDelete} onSendSingle={handleSendSingleReminder} isDayMonthDueOrOverdue={isDateDueOrOverdue} />
           </CardContent>
         </Card>
 

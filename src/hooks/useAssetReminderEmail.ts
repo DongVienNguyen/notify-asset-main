@@ -1,7 +1,7 @@
 import { useToast } from '@/hooks/use-toast';
 import { isDayMonthDueOrOverdue } from '@/utils/dateUtils';
-import { sendSingleReminder as sendSingleReminderOperation } from './singleReminderOperations';
-import { sendReminders as sendRemindersOperation } from './bulkReminderOperations';
+import { sendSingleReminder as sendSingleReminderOperation } from './useAssetReminderEmail/singleReminderOperations';
+import { sendReminders as sendRemindersOperation } from './useAssetReminderEmail/bulkReminderOperations';
 
 // Asset Reminder interface
 interface AssetReminder {

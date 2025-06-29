@@ -8,8 +8,15 @@ import SubmitButtons from '@/components/SubmitButtons';
 import TransactionTypeSelection from '@/components/TransactionTypeSelection';
 import { Card, CardContent } from '@/components/ui/card';
 import { AssetEntryFormState } from '@/types/assetEntryFormState';
+import { useCurrentUser } from '@/hooks/useCurrentUser'; // Import useCurrentUser
 
-const AssetEntryForm = () => {
+interface AssetEntryFormProps {
+  isRestrictedTime: boolean;
+}
+
+const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => {
+  const { user } = useCurrentUser(); // Get current user
+
   const {
     formData,
     setFormData,
@@ -24,7 +31,7 @@ const AssetEntryForm = () => {
     disabledBeforeDate,
   } = useAssetEntryForm();
 
-  const { handleSubmit, isSubmitting } = useAssetSubmission({
+  const { handleSubmit, isSubmitting, testEmail } = useAssetSubmission({ // Destructure testEmail
     formData,
     multipleAssets,
     clearForm,
@@ -71,10 +78,14 @@ const AssetEntryForm = () => {
             setFormData={setFormData}
             disabledBeforeDate={disabledBeforeDate}
           />
-          {/* NoteInput component removed */}
           <SubmitButtons
-            isSubmitting={isSubmitting}
+            isRestrictedTime={isRestrictedTime} // Pass isRestrictedTime
             isFormValid={isFormValid}
+            isLoading={isSubmitting} // Use isSubmitting for isLoading
+            user={user} // Pass user
+            onClear={clearForm} // Pass clearForm
+            onSubmit={handleSubmit} // Pass handleSubmit
+            onTestEmail={testEmail} // Pass testEmail
           />
         </form>
       </CardContent>

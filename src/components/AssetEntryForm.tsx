@@ -15,7 +15,7 @@ interface AssetEntryFormProps {
 }
 
 const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => {
-  const { currentUser: user } = useCurrentUser();
+  const { currentUser: user } = useCurrentUser(); // Lấy thông tin người dùng từ useCurrentUser
 
   const {
     formData,
@@ -35,7 +35,8 @@ const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    submitAssets(formData, multipleAssets, isRestrictedTime, clearForm);
+    // Truyền user.username vào hàm submitAssets
+    submitAssets(formData, multipleAssets, isRestrictedTime, clearForm, user?.username || '');
   };
 
   const handleSpecificFormDataChange = (field: keyof AssetEntryFormState, value: string) => {
@@ -80,10 +81,10 @@ const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => 
             isRestrictedTime={isRestrictedTime}
             isFormValid={isFormValid}
             isLoading={isSubmitting}
-            user={user}
+            user={user} // user này vẫn dùng để hiển thị hoặc truyền xuống SubmitButtons
             onClear={clearForm}
             onSubmit={handleSubmit}
-            onTestEmail={testEmail}
+            onTestEmail={() => testEmail(user?.username || '')} // Truyền user.username vào testEmail
           />
         </form>
       </CardContent>

@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { FormData } from '@/types/assetSubmission';
 import { validateAssetSubmission } from '@/utils/assetSubmissionValidation';
 import { submitAssetTransactions } from '@/services/assetSubmissionService';
-import { performEmailTest } from '@/services/emailTestService'; // Đã sửa lỗi cú pháp ở đây
-import { toast } from 'sonner'; // Import toast directly from sonner
+import { performEmailTest } from '@/services/emailTestService';
+import { toast } from 'sonner';
 
 export const useAssetSubmission = () => {
-  const { user } = useSecureAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Activated showToast function
   const showToast = (title: string, description?: string, variant?: 'default' | 'destructive') => {
     if (variant === 'destructive') {
       toast.error(title, { description });
@@ -23,12 +20,14 @@ export const useAssetSubmission = () => {
     formData: FormData,
     multipleAssets: string[],
     isRestrictedTime: boolean,
-    onSuccess: () => void
+    onSuccess: () => void,
+    username: string // Thêm tham số username
   ) => {
     console.log('=== ASSET SUBMISSION DEBUG START ===');
     console.log('isRestrictedTime:', isRestrictedTime);
     console.log('formData:', formData);
     console.log('multipleAssets:', multipleAssets);
+    console.log('username for submission:', username); // Log để debug
     
     if (isRestrictedTime) {
       console.log('❌ Submission blocked - restricted time');
@@ -48,6 +47,16 @@ export const useAssetSubmission = () => {
       showToast("Lỗi xác thực", validation.error || '', 'destructive');
       return;
     }
+
+    if (!username) { // Kiểm tra username trước khi gửi
+      showToast(
+        "Lỗi",
+        "Không tìm thấy thông tin người dùng để gửi thông báo. Vui lòng đăng nhập lại.",
+        'destructive'
+      );
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     
@@ -55,7 +64,7 @@ export const useAssetSubmission = () => {
       const { savedTransactions, emailResult } = await submitAssetTransactions(
         formData,
         multipleAssets,
-        user?.username || ''
+        username // Sử dụng username được truyền vào
       );
       
       if (emailResult.success) {
@@ -97,8 +106,8 @@ export const useAssetSubmission = () => {
     }
   };
 
-  const handleTestEmail = async () => {
-    if (!user?.username) {
+  const handleTestEmail = async (username: string) => { // Thêm tham số username
+    if (!username) {
       showToast(
         "Lỗi", 
         "Không tìm thấy thông tin người dùng",
@@ -109,7 +118,7 @@ export const useAssetSubmission = () => {
 
     setIsLoading(true);
     try {
-      const result = await performEmailTest(user.username);
+      const result = await performEmailTest(username); // Sử dụng username được truyền vào
       
       if (result.success) {
         console.log('✅ Email test thành công, hiển thị toast thành công');

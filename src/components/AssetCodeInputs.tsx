@@ -8,19 +8,19 @@ import { useImageProcessing } from '@/hooks/useImageProcessing';
 import { toast } from 'sonner';
 
 interface AssetCodeInputsProps {
-  multipleAssets: string[];
+  assets: string[]; // Changed from multipleAssets
   onAssetChange: (index: number, value: string) => void;
-  onAddAssetField: () => void;
-  onRemoveAssetField: (index: number) => void;
+  onAddAsset: () => void; // Changed from onAddAssetField
+  onRemoveAsset: (index: number) => void; // Changed from onRemoveAssetField
   onAssetCodesDetected: (codes: string[]) => void;
   onRoomDetected: (room: string) => void;
 }
 
 const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
-  multipleAssets,
+  assets, // Changed from multipleAssets
   onAssetChange,
-  onAddAssetField,
-  onRemoveAssetField,
+  onAddAsset, // Changed from onAddAssetField
+  onRemoveAsset, // Changed from onRemoveAssetField
   onAssetCodesDetected,
   onRoomDetected,
 }) => {
@@ -86,13 +86,13 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
           isProcessingImage={isProcessingImage}
           isDialogOpen={isDialogOpen}
           setIsDialogOpen={setIsDialogOpen}
-          onCameraClick={handleOpenCamera} // Updated prop name
-          onUploadClick={handleProcessImages} // Updated prop name
+          onCameraClick={handleOpenCamera}
+          onUploadClick={handleProcessImages}
         />
       </div>
       
       <div className="space-y-3">
-        {multipleAssets.map((asset, index) => (
+        {assets.map((asset, index) => ( // Changed from multipleAssets
           <div key={index} className="flex items-center space-x-2">
             <Input
               value={asset}
@@ -104,17 +104,17 @@ const AssetCodeInputs: React.FC<AssetCodeInputsProps> = ({
               type="button"
               variant="outline"
               size="icon"
-              onClick={onAddAssetField}
+              onClick={onAddAsset} // Changed from onAddAssetField
               className="text-green-600"
             >
               <Plus className="w-4 h-4" />
             </Button>
-            {multipleAssets.length > 1 && (
+            {assets.length > 1 && ( // Changed from multipleAssets
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => onRemoveAssetField(index)}
+                onClick={() => onRemoveAsset(index)} // Changed from onRemoveAssetField
                 className="text-red-600"
               >
                 <Minus className="w-4 h-4" />

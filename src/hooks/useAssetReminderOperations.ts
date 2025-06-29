@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { exportToCsv } from '@/utils/csvUtils';
+import { toCSV, FieldConfig } from '@/utils/csvUtils'; // Changed import from exportToCsv to toCSV, and added FieldConfig
 
 export const useAssetReminderOperations = (loadData: () => Promise<void>, showMessage: (params: { type: 'success' | 'error' | 'info'; text: string }) => void) => {
   const handleSubmit = async (
@@ -91,12 +91,37 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>, showMe
     }
   };
 
+  const assetReminderFields: FieldConfig[] = [
+    { key: 'id', label: 'ID', type: 'text' },
+    { key: 'ten_ts', label: 'Tên tài sản', type: 'text' },
+    { key: 'ngay_den_han', label: 'Ngày đến hạn', type: 'date' },
+    { key: 'cbkh', label: 'CBKH', type: 'text' },
+    { key: 'cbqln', label: 'CBQLN', type: 'text' },
+    { key: 'is_sent', label: 'Đã gửi', type: 'boolean' },
+    { key: 'created_at', label: 'Ngày tạo', type: 'date' },
+  ];
+
   const exportToCSV = (data: any[], filename: string = 'asset_reminders.csv') => {
     if (data.length === 0) {
       showMessage({ type: 'info', text: "Không có dữ liệu để xuất" });
       return;
     }
-    exportToCsv(data, filename);
+    const csvString = toCSV(data, assetReminderFields); // Use toCSV
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) { // Feature detection for download attribute
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showMessage({ type: 'success', text: `Đã xuất dữ liệu ra tệp ${filename}` });
+    } else {
+      showMessage({ type: 'error', text: "Trình duyệt của bạn không hỗ trợ tải xuống tệp trực tiếp." });
+    }
   };
 
   return {

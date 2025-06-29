@@ -1,15 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCsv } from '@/utils/csvUtils';
 
-interface ShowMessageParams {
-  type: 'success' | 'error' | 'info';
-  text: string;
-}
-
-export const useAssetReminderOperations = (
-  loadData: () => void,
-  showMessage: (params: ShowMessageParams) => void
-) => {
+export const useAssetReminderOperations = (loadData: () => Promise<void>, showMessage: (params: { type: 'success' | 'error' | 'info'; text: string }) => void) => {
   const handleSubmit = async (
     tenTaiSan: string,
     ngayDenHan: string,
@@ -48,7 +41,7 @@ export const useAssetReminderOperations = (
         showMessage({ type: 'success', text: "Thêm nhắc nhở thành công" });
       }
 
-      loadData();
+      await loadData();
       return true;
     } catch (error: any) {
       showMessage({ type: 'error', text: `Không thể lưu nhắc nhở: ${error.message}` });
@@ -65,7 +58,7 @@ export const useAssetReminderOperations = (
 
       if (error) throw error;
       showMessage({ type: 'success', text: "Xóa nhắc nhở thành công" });
-      loadData();
+      await loadData();
     } catch (error) {
       showMessage({ type: 'error', text: "Không thể xóa nhắc nhở" });
     }
@@ -80,24 +73,37 @@ export const useAssetReminderOperations = (
 
       if (error) throw error;
       showMessage({ type: 'success', text: "Xóa nhắc nhở đã gửi thành công" });
-      loadData();
+      await loadData();
     } catch (error) {
       showMessage({ type: 'error', text: "Không thể xóa nhắc nhở đã gửi" });
     }
   };
 
-  const exportToCSV = (reminders: any[]) => {
-    if (reminders.length === 0) {
+  const handleDeleteAllSentReminders = async () => {
+    showMessage({ type: '', text: '' });
+    try {
+      const { error } = await supabase.from('sent_asset_reminders').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all by matching a non-existent ID
+      if (error) throw error;
+      showMessage({ type: 'success', text: "Đã xóa tất cả nhắc nhở đã gửi thành công." });
+      await loadData();
+    } catch (error: any) {
+      showMessage({ type: 'error', text: `Không thể xóa tất cả nhắc nhở đã gửi: ${error.message}` });
+    }
+  };
+
+  const exportToCSV = (data: any[], filename: string = 'asset_reminders.csv') => {
+    if (data.length === 0) {
       showMessage({ type: 'info', text: "Không có dữ liệu để xuất" });
       return;
     }
-    // ... (CSV export logic remains the same)
+    exportToCsv(data, filename);
   };
 
   return {
     handleSubmit,
     handleDelete,
     handleDeleteSentReminder,
+    handleDeleteAllSentReminders,
     exportToCSV
   };
 };

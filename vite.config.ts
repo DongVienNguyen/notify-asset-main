@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+	allowedHosts: [
+      'refined-haddock-perfect.ngrok-free.app',
+      'localhost',
+      '127.0.0.1',
+      // thêm bất kỳ tên miền nào khác mà bạn cần cho phép
+    ],
   },
   //base: '/notify-asset-main/',
   plugins: [

@@ -225,6 +225,18 @@ const CRCReminders = () => {
     }
   };
 
+  const handleDeleteAllSentCRCReminders = async () => {
+    setMessage({ type: '', text: '' });
+    try {
+      const { error } = await supabase.from('sent_crc_reminders').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all by matching a non-existent ID
+      if (error) throw error;
+      setMessage({ type: 'success', text: "Đã xóa tất cả nhắc nhở CRC đã gửi thành công." });
+      refreshData();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Không thể xóa tất cả nhắc nhở CRC đã gửi: ${error.message}` });
+    }
+  };
+
   const exportToCSV = () => { /* ... existing logic ... */ };
 
   const filteredReminders = reminders.filter(r => [r.loai_bt_crc, r.ldpcrc, r.cbcrc, r.quycrc].some(val => val?.toLowerCase().includes(searchTerm.toLowerCase())));
@@ -283,7 +295,7 @@ const CRCReminders = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Danh sách đã gửi ({filteredSentReminders.length})</CardTitle>
-            <Button onClick={() => exportToCSV()} variant="destructive" disabled={isLoading}>Xóa tất cả</Button>
+            <Button onClick={handleDeleteAllSentCRCReminders} variant="destructive" disabled={isLoading}>Xóa tất cả</Button>
           </CardHeader>
           <CardContent>
             <SentCRCReminderTable filteredSentReminders={filteredSentReminders} sentSearchTerm={sentSearchTerm} setSentSearchTerm={setSentSearchTerm} isLoading={isLoading} onDeleteSentReminder={handleDeleteSentReminder} />

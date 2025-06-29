@@ -45,6 +45,7 @@ const AssetReminders = () => {
     handleSubmit,
     handleDelete,
     handleDeleteSentReminder,
+    handleDeleteAllSentReminders, // Import the new function
     exportToCSV
   } = useAssetReminderOperations(loadData, showMessage);
 
@@ -165,7 +166,7 @@ const AssetReminders = () => {
 
   const filteredSentReminders = sentReminders.filter(reminder =>
     reminder.ten_ts.toLowerCase().includes(sentSearchTerm.toLowerCase()) ||
-    (reminder.cbkh && reminder.cbkh.toLowerCase().includes(sentSearchTerm.toLowerCase())) ||
+    (reminder.cbkh && reminder.cbkh.toLowerCase().includes(sentSearch{Term.toLowerCase())) ||
     (reminder.cbqln && reminder.cbqln.toLowerCase().includes(sentSearchTerm.toLowerCase()))
   );
 
@@ -234,7 +235,7 @@ const AssetReminders = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Danh sách đã gửi ({filteredSentReminders.length})</CardTitle>
-            <Button onClick={() => exportToCSV(filteredReminders)} variant="destructive" disabled={isLoading}>Xóa tất cả</Button>
+            <Button onClick={handleDeleteAllSentReminders} variant="destructive" disabled={isLoading}>Xóa tất cả</Button>
           </CardHeader>
           <CardContent>
             <SentAssetReminderTable filteredSentReminders={filteredSentReminders} sentSearchTerm={sentSearchTerm} setSentSearchTerm={setSentSearchTerm} isLoading={isLoading} onDeleteSentReminder={handleDeleteSentReminder} />

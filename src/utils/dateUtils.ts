@@ -97,8 +97,8 @@ export const getTransactionDateRules = () => {
   const minutes = now.getMinutes();
 
   // Time window for "Chiều" shift: 08:00 - 12:45
-  const isMorningWindow = (hours >= 8) && (hours < 12 || (hour === 12 && minutes <= 45));
-
+  const isMorningWindow = (hours >= 8) && (hours < 12 || (hours === 12 && minutes <= 45));
+  //                                                      ^ Changed 'hour' to 'hours'
   let defaultDate: Date;
 
   if (isMorningWindow) {

@@ -14,6 +14,7 @@ import { useAssetReminderData } from '@/hooks/useAssetReminderData';
 import { useAssetReminderOperations } from '@/hooks/useAssetReminderOperations';
 import { useAssetReminderEmail } from '@/hooks/useAssetReminderEmail';
 import { sendPushNotification } from '@/services/notificationService';
+import { supabase } from '@/integrations/supabase/client'; // Added missing import
 
 interface AssetReminder {
   id: string;
@@ -45,7 +46,7 @@ const AssetReminders = () => {
     handleSubmit,
     handleDelete,
     handleDeleteSentReminder,
-    handleDeleteAllSentReminders, // Import the new function
+    handleDeleteAllSentReminders,
     exportToCSV
   } = useAssetReminderOperations(loadData, showMessage);
 
@@ -166,7 +167,7 @@ const AssetReminders = () => {
 
   const filteredSentReminders = sentReminders.filter(reminder =>
     reminder.ten_ts.toLowerCase().includes(sentSearchTerm.toLowerCase()) ||
-    (reminder.cbkh && reminder.cbkh.toLowerCase().includes(sentSearch{Term.toLowerCase())) ||
+    (reminder.cbkh && reminder.cbkh.toLowerCase().includes(sentSearchTerm.toLowerCase())) ||
     (reminder.cbqln && reminder.cbqln.toLowerCase().includes(sentSearchTerm.toLowerCase()))
   );
 

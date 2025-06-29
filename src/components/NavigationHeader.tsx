@@ -117,7 +117,7 @@ export function NavigationHeader() {
               </DropdownMenu>
             </div>
 
-            {/* Mobile Menu - Updated to show from top and fit content */}
+            {/* Mobile Menu - Updated to slide from left */}
             <div className="md:hidden">
               <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
@@ -125,10 +125,7 @@ export function NavigationHeader() {
                     <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent 
-                  side="top" 
-                  className="w-[70vw] mx-auto h-auto max-h-[50vh] top-0 left-1/2 transform -translate-x-1/2 rounded-b-lg"
-                >
+                <SheetContent side="left" className="w-full max-w-xs">
                   <SheetHeader className="pb-4">
                     <SheetTitle>Menu</SheetTitle>
                   </SheetHeader>

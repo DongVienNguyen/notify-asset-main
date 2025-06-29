@@ -5,8 +5,7 @@ import TransactionDetails from '@/components/TransactionDetails';
 import RoomSelection from '@/components/RoomSelection';
 import AssetCodeInputs from '@/components/AssetCodeInputs';
 import SubmitButtons from '@/components/SubmitButtons';
-import TransactionTypeSelection from '@/components/TransactionTypeSelection'; // New import
-import NoteInput from '@/components/NoteInput'; // New import
+import TransactionTypeSelection from '@/components/TransactionTypeSelection';
 import { Card, CardContent } from '@/components/ui/card';
 import { AssetEntryFormState } from '@/types/assetEntryFormState';
 
@@ -72,10 +71,7 @@ const AssetEntryForm = () => {
             setFormData={setFormData}
             disabledBeforeDate={disabledBeforeDate}
           />
-          <NoteInput
-            formData={formData}
-            onFormDataChange={handleSpecificFormDataChange}
-          />
+          {/* NoteInput component removed */}
           <SubmitButtons
             isSubmitting={isSubmitting}
             isFormValid={isFormValid}

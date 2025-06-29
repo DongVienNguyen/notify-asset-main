@@ -6,11 +6,12 @@ import RoomSelection from '@/components/RoomSelection';
 import AssetCodeInputs from '@/components/AssetCodeInputs';
 import SubmitButtons from '@/components/SubmitButtons';
 import { Card, CardContent } from '@/components/ui/card';
+import { AssetEntryFormState } from '@/types/assetEntryFormState'; // Import AssetEntryFormState
 
 const AssetEntryForm = () => {
   const {
     formData,
-    setFormData,
+    setFormData, // Keep setFormData to update individual fields
     multipleAssets,
     setMultipleAssets,
     handleRoomChange,
@@ -28,6 +29,11 @@ const AssetEntryForm = () => {
     clearForm,
   });
 
+  // Helper function to update specific fields in formData
+  const handleSpecificFormDataChange = (field: keyof AssetEntryFormState, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -38,8 +44,9 @@ const AssetEntryForm = () => {
             disabledBeforeDate={disabledBeforeDate}
           />
           <RoomSelection
-            selectedRoom={formData.room}
+            formData={formData} // Pass the entire formData object
             onRoomChange={handleRoomChange}
+            onFormDataChange={handleSpecificFormDataChange} // Pass the new handler for other fields like note
           />
           <AssetCodeInputs
             assets={multipleAssets}

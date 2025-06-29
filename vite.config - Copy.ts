@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  //base: '/notify-asset-main/',
+  base: '/notify-asset-main/',
   plugins: [
     react(),
     mode === 'development' &&

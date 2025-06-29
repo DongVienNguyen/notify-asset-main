@@ -1,99 +1,59 @@
-import React, { useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import AssetCodeInputs from './AssetCodeInputs';
-import RoomSelection from './RoomSelection';
-import TransactionDetails from './TransactionDetails';
-import SubmitButtons from './SubmitButtons';
-import { useAssetEntry } from '@/hooks/useAssetEntry';
+import React from 'react';
+import { useAssetEntryForm } from '@/hooks/useAssetEntryForm';
+import { useAssetSubmission } from '@/hooks/useAssetSubmission';
+import TransactionDetails from '@/components/TransactionDetails';
+import RoomSelection from '@/components/RoomSelection';
+import AssetCodeInputs from '@/components/AssetCodeInputs';
+import SubmitButtons from '@/components/SubmitButtons';
+import { Card, CardContent } from '@/components/ui/card';
 
 const AssetEntryForm = () => {
   const {
     formData,
     setFormData,
-    isLoading,
-    isRestrictedTime,
     multipleAssets,
     setMultipleAssets,
-    isFormValid,
     handleRoomChange,
     handleAssetChange,
     addAssetField,
     removeAssetField,
-    handleSubmit,
-    handleTestEmail,
+    isFormValid,
     clearForm,
-    user
-  } = useAssetEntry();
+    disabledBeforeDate,
+  } = useAssetEntryForm();
 
-  useEffect(() => {
-    if (window.innerWidth <= 768) {
-      const timer = setTimeout(() => {
-        const element = document.getElementById('instruction-section');
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const handleAssetCodesDetected = (codes: string[]) => {
-    setMultipleAssets([...codes]);
-  };
-
-  const handleRoomDetected = (room: string) => {
-    handleRoomChange(room);
-  };
-
-  const handleFormDataChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const { handleSubmit, isSubmitting } = useAssetSubmission({
+    formData,
+    multipleAssets,
+    clearForm,
+  });
 
   return (
-    <div className="space-y-6 p-6 bg-white rounded-lg border">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <RoomSelection
-          formData={formData}
-          onRoomChange={handleRoomChange}
-          onFormDataChange={handleFormDataChange}
-        />
-
-        <AssetCodeInputs
-          multipleAssets={multipleAssets}
-          onAssetChange={handleAssetChange}
-          onAddAssetField={addAssetField}
-          onRemoveAssetField={removeAssetField}
-          onAssetCodesDetected={handleAssetCodesDetected}
-          onRoomDetected={handleRoomDetected}
-        />
-
-        <TransactionDetails
-          formData={formData}
-          onFormDataChange={handleFormDataChange}
-        />
-
-        {/* Alerts */}
-        {isRestrictedTime && (
-          <Alert className="border-orange-200 bg-orange-50">
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-700">
-              Hiện tại đang trong khung giờ cấm (7:45-8:05 hoặc 12:45-13:05). Vui lòng nhắn Zalo thay vì dùng hệ thống.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <SubmitButtons
-          isRestrictedTime={isRestrictedTime}
-          isFormValid={isFormValid}
-          isLoading={isLoading}
-          user={user}
-          onClear={clearForm}
-          onSubmit={handleSubmit}
-          onTestEmail={handleTestEmail}
-        />
-      </form>
-    </div>
+    <Card>
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <TransactionDetails
+            formData={formData}
+            setFormData={setFormData}
+            disabledBeforeDate={disabledBeforeDate}
+          />
+          <RoomSelection
+            selectedRoom={formData.room}
+            onRoomChange={handleRoomChange}
+          />
+          <AssetCodeInputs
+            assets={multipleAssets}
+            onAssetChange={handleAssetChange}
+            onAddAsset={addAssetField}
+            onRemoveAsset={removeAssetField}
+          />
+          <SubmitButtons
+            isSubmitting={isSubmitting}
+            isFormValid={isFormValid}
+          />
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

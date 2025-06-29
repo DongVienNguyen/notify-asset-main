@@ -11,9 +11,10 @@ interface DateInputProps {
   onChange: (value: string) => void; // Returns format: YYYY-MM-DD
   placeholder?: string;
   className?: string;
+  disabledBefore?: Date; // New prop to disable past dates
 }
 
-const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, className }) => {
+const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, className, disabledBefore }) => {
   const [open, setOpen] = useState(false);
   // Convert YYYY-MM-DD string to Date object for react-day-picker
   // parseISO creates a Date object in local time.
@@ -51,6 +52,7 @@ const DateInput: React.FC<DateInputProps> = ({ value, onChange, placeholder, cla
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
+          disabled={disabledBefore ? { before: disabledBefore } : undefined}
           initialFocus
         />
       </PopoverContent>

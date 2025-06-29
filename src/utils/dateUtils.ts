@@ -52,7 +52,7 @@ export const formatToDDMMYYYY = (date: string | Date | undefined | null): string
   }
 };
 
-// --- New Helper Functions for Daily Report ---
+// --- Helper Functions for Asset Entry Date ---
 
 /** Gets the current date in GMT+7 timezone. */
 export const getGMTPlus7Date = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
@@ -70,6 +70,57 @@ export const getNextWorkingDay = (date: Date): Date => {
   else nextDay.setDate(date.getDate() + 1);
   return nextDay;
 };
+
+/**
+ * Helper to get the effective date, skipping weekends by moving to the next Monday.
+ * @param date The starting date.
+ * @returns The date if it's a weekday, or the next Monday if it's a weekend.
+ */
+const getEffectiveDate = (date: Date): Date => {
+    const effectiveDate = new Date(date);
+    const day = effectiveDate.getDay();
+    if (day === 6) { // Saturday
+        effectiveDate.setDate(effectiveDate.getDate() + 2);
+    } else if (day === 0) { // Sunday
+        effectiveDate.setDate(effectiveDate.getDate() + 1);
+    }
+    return effectiveDate;
+};
+
+/**
+ * Determines the default transaction date and disabled date range based on the current time.
+ * @returns An object with `defaultDate` (YYYY-MM-DD) and `disabledBefore` (Date object).
+ */
+export const getTransactionDateRules = () => {
+  const now = getGMTPlus7Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Time window for "Chiều" shift: 08:00 - 12:45
+  const isMorningWindow = (hours >= 8) && (hours < 12 || (hour === 12 && minutes <= 45));
+
+  let defaultDate: Date;
+
+  if (isMorningWindow) {
+    // In the morning window, the default is the current working day.
+    defaultDate = getEffectiveDate(now);
+  } else {
+    // Outside the morning window, the default is the next working day.
+    defaultDate = getNextWorkingDay(now);
+  }
+  
+  // Users cannot select any day before the calculated default date.
+  const disabledBefore = new Date(defaultDate);
+  disabledBefore.setHours(0, 0, 0, 0);
+
+  return {
+    defaultDate: format(defaultDate, 'yyyy-MM-dd'),
+    disabledBefore: disabledBefore,
+  };
+};
+
+
+// --- New Helper Functions for Daily Report ---
 
 /**
  * Determines the target date for the morning report based on the current time.

@@ -6,7 +6,7 @@ export const useCurrentUser = () => {
 
   const loadCurrentUser = async () => {
     try {
-      const userStr = localStorage.getItem('currentUser');
+      const userStr = localStorage.getItem('loggedInStaff'); // Corrected key from 'currentUser'
       if (userStr) {
         const user: Staff = JSON.parse(userStr); // Cast to Staff type
         setCurrentUser(user);

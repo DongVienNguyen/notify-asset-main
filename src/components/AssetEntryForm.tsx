@@ -15,7 +15,7 @@ interface AssetEntryFormProps {
 }
 
 const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => {
-  const { user } = useCurrentUser();
+  const { currentUser: user } = useCurrentUser();
 
   const {
     formData,
@@ -31,11 +31,12 @@ const AssetEntryForm: React.FC<AssetEntryFormProps> = ({ isRestrictedTime }) => 
     disabledBeforeDate,
   } = useAssetEntryForm();
 
-  const { handleSubmit, isSubmitting, testEmail } = useAssetSubmission({
-    formData,
-    multipleAssets,
-    clearForm,
-  });
+  const { handleSubmit: submitAssets, isLoading: isSubmitting, handleTestEmail: testEmail } = useAssetSubmission();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitAssets(formData, multipleAssets, isRestrictedTime, clearForm);
+  };
 
   const handleSpecificFormDataChange = (field: keyof AssetEntryFormState, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

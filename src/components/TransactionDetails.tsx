@@ -2,7 +2,6 @@ import React from 'react';
 import { AssetEntryFormState } from '@/types/assetEntryFormState';
 import DateInput from '@/components/DateInput';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface TransactionDetailsProps {
@@ -19,7 +18,7 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ formData, setFo
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Buổi và ngày lấy TS */}
-      <div className="space-y-2">
+      <div className="space-y-2 md:col-span-2"> {/* Changed to col-span-2 for better layout */}
         <Label>Buổi và ngày lấy TS</Label>
         <div className="grid grid-cols-2 gap-2">
           <Select
@@ -40,33 +39,6 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ formData, setFo
             disabledBefore={disabledBeforeDate}
           />
         </div>
-      </div>
-
-      {/* Loại giao dịch */}
-      <div className="space-y-2">
-        <Label>Loại giao dịch</Label>
-        <Select
-          value={formData.transaction_type}
-          onValueChange={(value) => handleInputChange('transaction_type', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Chọn loại giao dịch" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Mượn">Mượn</SelectItem>
-            <SelectItem value="Xuất">Xuất</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Ghi chú (nếu có) */}
-      <div className="space-y-2 md:col-span-2">
-        <Label>Ghi chú (nếu có)</Label>
-        <Input
-          value={formData.note || ''}
-          onChange={(e) => handleInputChange('note', e.target.value)}
-          placeholder="Nhập ghi chú..."
-        />
       </div>
     </div>
   );

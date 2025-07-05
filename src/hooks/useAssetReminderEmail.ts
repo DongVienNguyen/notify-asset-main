@@ -1,89 +1,106 @@
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { sendAssetNotificationEmail } from '@/services/emailService';
-import { isDayMonthDueOrOverdue } from '@/utils/dateUtils';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { sendAssetReminderEmail } from '@/services/notifications/assetNotificationService'; // Corrected import path
+import { StaffMember, AssetReminder, Staff } from '@/types/staff'; // Corrected import
 
-interface StaffData {
-  cbkh: { ten_nv: string; email: string }[];
-  cbqln: { ten_nv: string; email: string }[];
-}
+export const useAssetReminderEmail = (staff: Staff, loadData: () => Promise<void>, showMessage: (params: { type: 'success' | 'error' | 'info'; text: string }) => void) => {
+  const [isSending, setIsSending] = useState(false);
 
-interface ShowMessageParams {
-  type: 'success' | 'error' | 'info';
-  text: string;
-}
+  const isDateDueOrOverdue = (dateString: string): boolean => {
+    const [day, month] = dateString.split('-').map(Number);
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const reminderDate = new Date(currentYear, month - 1, day);
 
-export const useAssetReminderEmail = (
-  staff: StaffData,
-  loadData: () => void,
-  showMessage: (params: ShowMessageParams) => void
-) => {
-  const getEmailTemplate = (ten_ts: string, ngay_den_han: string, cbkh: string, cbqln: string) => {
-    const recipients = [cbkh, cbqln].filter(Boolean).map(name => `bạn ${name}`).join(' và ');
-    return `Xin chào ${recipients}, có tài sản ${ten_ts} sắp đến hạn trả vào ngày ${ngay_den_han}, các bạn hãy hoàn thành trả tài sản trước 16 giờ 00 ngày ${ngay_den_han}. Trân trọng cám ơn.`;
-  };
-
-  const sendSingleReminder = async (reminder: any) => {
-    if (!isDayMonthDueOrOverdue(reminder.ngay_den_han)) {
-      showMessage({ type: 'info', text: "Nhắc nhở này chưa đến hạn" });
-      return;
+    // If the reminder date has already passed this year, check for next year
+    if (reminderDate < today && (today.getMonth() > month - 1 || (today.getMonth() === month - 1 && today.getDate() > day))) {
+      reminderDate.setFullYear(currentYear + 1);
     }
 
+    // Set both dates to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
+    reminderDate.setHours(0, 0, 0, 0);
+
+    return reminderDate <= today;
+  };
+
+  const sendSingleReminder = async (reminder: AssetReminder): Promise<boolean> => {
+    setIsSending(true);
     try {
-      const recipients: string[] = [];
-      if (reminder.cbkh) {
-        const member = staff.cbkh.find(m => m.ten_nv === reminder.cbkh);
-        if (member) recipients.push(`${member.email}.hvu@vietcombank.com.vn`);
-      }
-      if (reminder.cbqln) {
-        const member = staff.cbqln.find(m => m.ten_nv === reminder.cbqln);
-        if (member) recipients.push(`${member.email}.hvu@vietcombank.com.vn`);
+      const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
+      const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
+
+      const recipientEmails: string[] = [];
+      if (cbkhUser?.email) recipientEmails.push(cbkhUser.email);
+      if (cbqlnUser?.email) recipientEmails.push(cbqlnUser.email);
+
+      if (recipientEmails.length === 0) {
+        showMessage({ type: 'error', text: `Không tìm thấy email người nhận cho nhắc nhở "${reminder.ten_ts}".` });
+        return false;
       }
 
-      if (recipients.length === 0) {
-        showMessage({ type: 'error', text: "Không tìm thấy người nhận email" });
-        return;
-      }
+      const emailSubject = `Nhắc nhở tài sản đến hạn: ${reminder.ten_ts}`;
+      const emailBody = `Tài sản "${reminder.ten_ts}" có ngày đến hạn là ${reminder.ngay_den_han}. Vui lòng kiểm tra và xử lý.`;
 
-      const subject = `Nhắc nhở tài sản đến hạn: ${reminder.ten_ts}`;
-      const content = getEmailTemplate(reminder.ten_ts, reminder.ngay_den_han, reminder.cbkh, reminder.cbqln);
-      const emailResult = await sendAssetNotificationEmail(recipients, subject, content);
+      const emailResult = await sendAssetReminderEmail(recipientEmails, emailSubject, emailBody);
 
       if (emailResult.success) {
-        // Move reminder to sent table
-        await supabase.from('sent_asset_reminders').insert([{ ...reminder, sent_date: new Date().toISOString().split('T')[0], is_sent: true }]);
-        await supabase.from('asset_reminders').delete().eq('id', reminder.id);
-        showMessage({ type: 'success', text: "Đã gửi email và chuyển sang danh sách đã gửi" });
-        loadData();
+        // Mark as sent and record in sent_asset_reminders
+        await supabase.from('asset_reminders').update({ is_sent: true }).eq('id', reminder.id);
+        await supabase.from('sent_asset_reminders').insert({
+          ten_ts: reminder.ten_ts,
+          ngay_den_han: reminder.ngay_den_han,
+          cbqln: reminder.cbqln,
+          cbkh: reminder.cbkh,
+          is_sent: true,
+          sent_date: format(new Date(), 'yyyy-MM-dd') // Record actual sent date
+        });
+        showMessage({ type: 'success', text: `Đã gửi nhắc nhở cho "${reminder.ten_ts}" thành công.` });
+        await loadData();
+        return true;
       } else {
-        throw new Error(emailResult.error);
+        showMessage({ type: 'error', text: `Không thể gửi nhắc nhở cho "${reminder.ten_ts}": ${emailResult.error}` });
+        return false;
       }
     } catch (error: any) {
-      showMessage({ type: 'error', text: `Không thể gửi email: ${error.message}` });
+      console.error('Error sending single reminder:', error);
+      showMessage({ type: 'error', text: `Lỗi khi gửi nhắc nhở cho "${reminder.ten_ts}": ${error.message}` });
+      return false;
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const sendReminders = async (reminders: any[]) => {
-    const dueReminders = reminders.filter(r => isDayMonthDueOrOverdue(r.ngay_den_han));
-    if (dueReminders.length === 0) {
-      showMessage({ type: 'info', text: "Không có nhắc nhở nào đến hạn" });
-      return;
+  const sendReminders = async (remindersToSend: AssetReminder[]): Promise<boolean> => {
+    if (remindersToSend.length === 0) {
+      showMessage({ type: 'info', text: "Không có nhắc nhở nào đến hạn để gửi." });
+      return true; // No reminders to send, so it's "successful" in that sense
     }
 
-    let successCount = 0;
-    for (const reminder of dueReminders) {
-      // Re-using single reminder logic for simplicity
-      await sendSingleReminder(reminder);
-      successCount++; // Assuming it succeeds for now, as sendSingleReminder handles its own messages
+    setIsSending(true);
+    let allSuccess = true;
+    for (const reminder of remindersToSend) {
+      const success = await sendSingleReminder(reminder); // Reuse single send logic
+      if (!success) {
+        allSuccess = false;
+      }
     }
-
-    if (successCount > 0) {
-        // Message is handled in sendSingleReminder, so no global message needed here
+    setIsSending(false);
+    if (allSuccess) {
+      showMessage({ type: 'success', text: `Đã gửi tất cả ${remindersToSend.length} nhắc nhở đến hạn.` });
+    } else {
+      showMessage({ type: 'error', text: "Có lỗi xảy ra khi gửi một số nhắc nhở." });
     }
+    return allSuccess;
   };
 
   return {
-    isDateDueOrOverdue: isDayMonthDueOrOverdue,
+    isSending,
+    isDateDueOrOverdue,
     sendSingleReminder,
-    sendReminders
+    sendReminders,
   };
 };

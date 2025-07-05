@@ -4,9 +4,10 @@ import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import BorrowReportHeader from '@/components/BorrowReportHeader';
 import BorrowReportFilters from '@/components/BorrowReportFilters';
-import BorrowReportTable from '@/components/BorrowReportTable';
+import BorrowReportTable, { BorrowReportTableProps } from '@/components/BorrowReportTable'; // Import BorrowReportTableProps
 import { useBorrowReportData } from '@/hooks/useBorrowReportData';
 import { Button } from '@/components/ui/button';
+import { Transaction } from '@/types/asset'; // Import Transaction type
 
 const BorrowReport = () => {
   const {

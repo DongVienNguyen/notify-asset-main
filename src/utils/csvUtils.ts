@@ -1,4 +1,4 @@
-interface FieldConfig {
+export interface FieldConfig { // Added export
   key: string;
   label: string;
   type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'boolean';

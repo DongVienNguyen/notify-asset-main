@@ -6,6 +6,7 @@ import { useDailyReportLogic } from '@/hooks/useDailyReportLogic';
 import DailyReportFilters from '@/components/DailyReportFilters';
 import GroupedReportView from '@/components/GroupedReportView';
 import DetailedReportView from '@/components/DetailedReportView';
+import { Transaction } from '@/types/asset'; // Import Transaction type
 
 const DailyReport = () => {
   const {
@@ -30,7 +31,7 @@ const DailyReport = () => {
     dateStrings,
   } = useDailyReportLogic();
 
-  if (isLoading && transactions.length === 0) {
+  if (isLoading && (transactions as Transaction[]).length === 0) { // Cast to Transaction[]
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-96">
@@ -80,8 +81,8 @@ const DailyReport = () => {
             />
           ) : (
             <DetailedReportView
-              transactions={transactions}
-              paginatedTransactions={paginatedTransactions}
+              transactions={transactions as Transaction[]} // Cast to Transaction[]
+              paginatedTransactions={paginatedTransactions as Transaction[]} // Cast to Transaction[]
               totalPages={totalPages}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}

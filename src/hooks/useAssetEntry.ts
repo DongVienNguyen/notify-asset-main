@@ -16,7 +16,8 @@ export const useAssetEntry = () => {
     handleAssetChange,
     addAssetField,
     removeAssetField,
-    clearForm
+    clearForm,
+    disabledBeforeDate
   } = useAssetEntryForm();
   
   const {
@@ -27,7 +28,8 @@ export const useAssetEntry = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitAssets(formData, multipleAssets, isRestrictedTime, clearForm);
+    // Pass username to submitAssets
+    await submitAssets(formData, multipleAssets, isRestrictedTime, clearForm, user?.username || '');
   };
 
   return {
@@ -45,6 +47,7 @@ export const useAssetEntry = () => {
     handleSubmit,
     handleTestEmail,
     clearForm,
-    user
+    user,
+    disabledBeforeDate
   };
 };

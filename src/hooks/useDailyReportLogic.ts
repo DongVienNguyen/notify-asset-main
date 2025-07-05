@@ -100,10 +100,7 @@ export const useDailyReportLogic = () => {
     queryFn: () => getAssetTransactions(currentQueryFilters),
     enabled: !!currentQueryFilters.startDate,
     staleTime: 5 * 60 * 1000,
-    onError: (error) => {
-      console.error('Error loading transactions:', error);
-      toast.error(`Không thể tải dữ liệu: ${error.message}`);
-    }
+    // onError is removed in Tanstack Query v5. Errors are handled by checking `error` property.
   });
   
   // Reset page number when transactions data changes

@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast'; // Corrected import path
 import { supabase } from '@/integrations/supabase/client';
 import { Database, Settings } from 'lucide-react';
 
@@ -79,7 +78,7 @@ const TestDataButton = () => {
         description: `Đã tạo ${ldpcrcResult?.length || 0} LDP CRC, ${cbcrcResult?.length || 0} CB CRC và ${quycrcResult?.length || 0} Quy CRC mẫu`,
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating test data:', error);
       toast({
         title: "Lỗi",
@@ -97,11 +96,11 @@ const TestDataButton = () => {
       console.log('Testing database connection...');
 
       // Test basic connection for CRC tables
-      const { data: ldpcrcData, error: ldpcrcError } = await supabase.from('ldpcrc').select('count', { count: 'exact' });
-      const { data: cbcrcData, error: cbcrcError } = await supabase.from('cbcrc').select('count', { count: 'exact' });
-      const { data: quycrcData, error: quycrcError } = await supabase.from('quycrc').select('count', { count: 'exact' });
-      const { data: crcRemindersData, error: crcRemindersError } = await supabase.from('crc_reminders').select('count', { count: 'exact' });
-      const { data: sentCrcRemindersData, error: sentCrcRemindersError } = await supabase.from('sent_crc_reminders').select('count', { count: 'exact' });
+      const { count: ldpcrcCount, error: ldpcrcError } = await supabase.from('ldpcrc').select('*', { count: 'exact', head: true });
+      const { count: cbcrcCount, error: cbcrcError } = await supabase.from('cbcrc').select('*', { count: 'exact', head: true });
+      const { count: quycrcCount, error: quycrcError } = await supabase.from('quycrc').select('*', { count: 'exact', head: true });
+      const { count: crcRemindersCount, error: crcRemindersError } = await supabase.from('crc_reminders').select('*', { count: 'exact', head: true });
+      const { count: sentCrcRemindersCount, error: sentCrcRemindersError } = await supabase.from('sent_crc_reminders').select('*', { count: 'exact', head: true });
       
       if (ldpcrcError || cbcrcError || quycrcError || crcRemindersError || sentCrcRemindersError) {
         const errors = [ldpcrcError, cbcrcError, quycrcError, crcRemindersError, sentCrcRemindersError].filter(Boolean);
@@ -110,11 +109,11 @@ const TestDataButton = () => {
       }
 
       console.log('Connection test successful:', {
-        ldpcrc: ldpcrcData,
-        cbcrc: cbcrcData,
-        quycrc: quycrcData,
-        crc_reminders: crcRemindersData,
-        sent_crc_reminders: sentCrcRemindersData
+        ldpcrc: ldpcrcCount,
+        cbcrc: cbcrcCount,
+        quycrc: quycrcCount,
+        crc_reminders: crcRemindersCount,
+        sent_crc_reminders: sentCrcRemindersCount
       });
 
       toast({
@@ -122,7 +121,7 @@ const TestDataButton = () => {
         description: "Tất cả các bảng CRC đã kết nối bình thường (LDPCRC, CBCRC, QUYCRC, CRC_REMINDERS, SENT_CRC_REMINDERS)",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Connection test failed:', error);
       toast({
         title: "Lỗi kết nối",

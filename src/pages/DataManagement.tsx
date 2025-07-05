@@ -264,11 +264,8 @@ const DataManagement = () => {
     if (user) {
       loadData();
     } else if (user === null) {
-      // Handle case where user is explicitly logged out
-      const authUser = getStoredUser();
-      if (!authUser) {
-        navigate('/login');
-      }
+      // If user is null (not logged in), navigate to login
+      navigate('/login');
     }
   }, [user, selectedEntity, navigate]);
 

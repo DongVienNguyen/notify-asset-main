@@ -14,17 +14,8 @@ import { useAssetReminderData } from '@/hooks/useAssetReminderData';
 import { useAssetReminderOperations } from '@/hooks/useAssetReminderOperations';
 import { useAssetReminderEmail } from '@/hooks/useAssetReminderEmail';
 import { sendPushNotification } from '@/services/notificationService';
-import { supabase } from '@/integrations/supabase/client'; // Added missing import
-
-interface AssetReminder {
-  id: string;
-  ten_ts: string;
-  ngay_den_han: string;
-  cbkh: string | null;
-  cbqln: string | null;
-  is_sent: boolean;
-  created_at: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { AssetReminder } from '@/types/staff'; // Import AssetReminder from types/staff
 
 const AssetReminders = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -36,7 +27,7 @@ const AssetReminders = () => {
   const {
     reminders,
     sentReminders,
-    staff,
+    staff, // This staff object should contain all properties (cbqln, cbkh, ldpcrc, cbcrc, quycrc)
     currentUser,
     isLoading,
     loadData
@@ -54,7 +45,7 @@ const AssetReminders = () => {
     isDateDueOrOverdue,
     sendSingleReminder,
     sendReminders
-  } = useAssetReminderEmail(staff, loadData, showMessage);
+  } = useAssetReminderEmail(staff, loadData, showMessage); // Pass the complete staff object
 
   const createNotification = async (recipientUsername: string, title: string, message: string) => {
     if (!recipientUsername) return;
@@ -68,7 +59,7 @@ const AssetReminders = () => {
 
   const handleSendSingleReminder = async (reminder: AssetReminder) => {
     const success = await sendSingleReminder(reminder);
-    if (success) {
+    if (success) { // Check boolean return value
       const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
       const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);
       const message = `Tài sản "${reminder.ten_ts}" đã đến hạn.`;
@@ -91,7 +82,7 @@ const AssetReminders = () => {
   const handleSendAllReminders = async () => {
     const dueReminders = reminders.filter(r => isDateDueOrOverdue(r.ngay_den_han));
     const success = await sendReminders(dueReminders);
-    if (success) {
+    if (success) { // Check boolean return value
       for (const reminder of dueReminders) {
         const cbkhUser = staff.cbkh.find(s => s.ten_nv === reminder.cbkh);
         const cbqlnUser = staff.cbqln.find(s => s.ten_nv === reminder.cbqln);

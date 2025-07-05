@@ -1,6 +1,7 @@
-import { saveAssetTransactions, AssetTransaction } from '@/services/assetService';
+import { saveAssetTransactions } from '@/services/assetService';
 import { sendAssetTransactionConfirmation } from '@/services/emailService';
 import { FormData } from '@/types/assetSubmission';
+import { Transaction, AssetTransactionPayload } from '@/types/asset'; // Import both Transaction and AssetTransactionPayload
 
 export const submitAssetTransactions = async (
   formData: FormData,
@@ -10,7 +11,7 @@ export const submitAssetTransactions = async (
   console.log('=== ASSET ENTRY SUBMIT START ===');
   console.log('Current user:', username);
   
-  const transactions: AssetTransaction[] = multipleAssets.map(asset => {
+  const transactions: AssetTransactionPayload[] = multipleAssets.map(asset => { // Changed type to AssetTransactionPayload[]
     const [code, year] = asset.split('.');
     return {
       staff_code: username,
@@ -27,7 +28,7 @@ export const submitAssetTransactions = async (
   console.log('Submitting transactions:', transactions);
   
   // Save to database first
-  const savedTransactions = await saveAssetTransactions(transactions);
+  const savedTransactions = await saveAssetTransactions(transactions); // saveAssetTransactions should return Transaction[]
   console.log('Successfully saved to database:', savedTransactions);
   
   // Send email notification after successful save

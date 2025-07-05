@@ -82,3 +82,28 @@ export const sendAssetTransactionConfirmation = async (
     return await sendAssetNotificationEmail([recipientEmail], subject, content);
   }
 };
+
+export const sendAssetReminderEmail = async (
+  recipients: string[],
+  subject: string,
+  content: string
+): Promise<EmailResponse> => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #ff9800; text-align: center;">Nhắc nhở Tài sản đến hạn</h2>
+      <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        ${content}
+      </div>
+      <p style="color: #6b7280; font-size: 14px; text-align: center;">
+        Đây là email tự động từ hệ thống Nhắc nhở Tài sản
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: recipients,
+    subject: subject,
+    html: html,
+    type: 'asset_reminder'
+  });
+};

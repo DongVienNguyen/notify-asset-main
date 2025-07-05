@@ -1,4 +1,3 @@
-
 // Re-export core email functionality
 export { sendEmail } from './core/emailClient';
 export type { EmailRequest, EmailResponse } from './core/emailClient';
@@ -7,7 +6,8 @@ export type { EmailRequest, EmailResponse } from './core/emailClient';
 export {
   sendAssetNotificationEmail,
   testEmailFunction,
-  sendAssetTransactionConfirmation
+  sendAssetTransactionConfirmation,
+  sendAssetReminderEmail // Corrected export path
 } from './notifications/assetNotificationService';
 
 // Re-export error report service

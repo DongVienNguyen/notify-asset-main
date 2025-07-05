@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toCSV, FieldConfig } from '@/utils/csvUtils'; // Changed import from exportToCsv to toCSV, and added FieldConfig
+import { toCSV, FieldConfig } from '@/utils/csvUtils';
 
 export const useAssetReminderOperations = (loadData: () => Promise<void>, showMessage: (params: { type: 'success' | 'error' | 'info'; text: string }) => void) => {
   const handleSubmit = async (
@@ -59,7 +59,7 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>, showMe
       if (error) throw error;
       showMessage({ type: 'success', text: "Xóa nhắc nhở thành công" });
       await loadData();
-    } catch (error) {
+    } catch (error: any) { // Added any type to error
       showMessage({ type: 'error', text: "Không thể xóa nhắc nhở" });
     }
   };
@@ -74,13 +74,13 @@ export const useAssetReminderOperations = (loadData: () => Promise<void>, showMe
       if (error) throw error;
       showMessage({ type: 'success', text: "Xóa nhắc nhở đã gửi thành công" });
       await loadData();
-    } catch (error) {
+    } catch (error: any) { // Added any type to error
       showMessage({ type: 'error', text: "Không thể xóa nhắc nhở đã gửi" });
     }
   };
 
   const handleDeleteAllSentReminders = async () => {
-    showMessage({ type: '', text: '' });
+    showMessage({ type: 'info', text: '' }); // Changed type to 'info'
     try {
       const { error } = await supabase.from('sent_asset_reminders').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all by matching a non-existent ID
       if (error) throw error;

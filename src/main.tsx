@@ -3,9 +3,9 @@ import App from './App.tsx'
 import './index.css'
 import { SecureAuthProvider } from './hooks/useSecureAuth.tsx'; // Import SecureAuthProvider
 import React from 'react'; // Import React for StrictMode
-import { registerServiceWorker } from './utils/pushNotificationUtils';
 
-registerServiceWorker();
+// The vite-plugin-pwa will handle service worker registration automatically.
+// No need to call registerServiceWorker() here anymore.
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

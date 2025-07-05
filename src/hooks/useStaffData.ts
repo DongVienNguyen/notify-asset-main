@@ -1,96 +1,59 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-// Staff Member interface
-interface StaffMember {
-  id: string;
-  ten_nv: string;
-  email: string;
-}
+import { Staff, StaffMember } from '@/types/staff'; // Import Staff and StaffMember types
 
 export const useStaffData = () => {
-  const [staff, setStaff] = useState<{ cbkh: StaffMember[]; cbqln: StaffMember[] }>({
+  const [staff, setStaff] = useState<Staff>({
+    cbqln: [],
     cbkh: [],
-    cbqln: []
+    ldpcrc: [],
+    cbcrc: [],
+    quycrc: [],
   });
 
   const loadStaffData = async () => {
     try {
-      console.log('Loading staff data...');
-      
-      // Load CBKH staff with email
-      console.log('Loading CBKH staff...');
-      const { data: cbkhData, error: cbkhError } = await supabase
-        .from('cbkh')
-        .select('id, ten_nv, email')
-        .order('ten_nv');
-
-      if (cbkhError) {
-        console.error('CBKH query error:', cbkhError);
-        throw new Error(`CBKH load error: ${cbkhError.message}`);
-      }
-
-      console.log('CBKH data loaded:', cbkhData?.length || 0, 'records');
-
-      // Load CBQLN staff with email
-      console.log('Loading CBQLN staff...');
       const { data: cbqlnData, error: cbqlnError } = await supabase
         .from('cbqln')
-        .select('id, ten_nv, email')
-        .order('ten_nv');
+        .select('id, ten_nv, email');
+      if (cbqlnError) throw cbqlnError;
 
-      if (cbqlnError) {
-        console.error('CBQLN query error:', cbqlnError);
-        throw new Error(`CBQLN load error: ${cbqlnError.message}`);
-      }
+      const { data: cbkhData, error: cbkhError } = await supabase
+        .from('cbkh')
+        .select('id, ten_nv, email');
+      if (cbkhError) throw cbkhError;
 
-      console.log('CBQLN data loaded:', cbqlnData?.length || 0, 'records');
+      const { data: ldpcrcData, error: ldpcrcError } = await supabase
+        .from('ldpcrc')
+        .select('id, ten_nv, email');
+      if (ldpcrcError) throw ldpcrcError;
 
-      // Update state with loaded data
-      const cbkhStaff = (cbkhData || []).map(item => ({
-        id: item.id,
-        ten_nv: item.ten_nv,
-        email: item.email
-      }));
+      const { data: cbcrcData, error: cbcrcError } = await supabase
+        .from('cbcrc')
+        .select('id, ten_nv, email');
+      if (cbcrcError) throw cbcrcError;
 
-      const cbqlnStaff = (cbqlnData || []).map(item => ({
-        id: item.id,
-        ten_nv: item.ten_nv,
-        email: item.email
-      }));
-
-      console.log('Setting asset staff state:', {
-        cbkh: cbkhStaff.length,
-        cbqln: cbqlnStaff.length
-      });
+      const { data: quycrcData, error: quycrcError } = await supabase
+        .from('quycrc')
+        .select('id, ten_nv, email');
+      if (quycrcError) throw quycrcError;
 
       setStaff({
-        cbkh: cbkhStaff,
-        cbqln: cbqlnStaff
+        cbqln: cbqlnData || [],
+        cbkh: cbkhData || [],
+        ldpcrc: ldpcrcData || [],
+        cbcrc: cbcrcData || [],
+        quycrc: quycrcData || [],
       });
-
-      // REMOVED: Success message for staff data loading
-      // toast.success(
-      //   "Thành công",
-      //   { description: `Đã tải ${cbkhStaff.length} CB KH và ${cbqlnStaff.length} CB QLN` }
-      // );
-
-      return { cbkhStaff, cbqlnStaff };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading staff data:', error);
-      setStaff({ cbkh: [], cbqln: [] });
-      toast.error(
-        "Lỗi",
-        { description: `Không thể tải dữ liệu nhân viên: ${error.message}` }
-      );
-      throw error;
+      // Optionally, set an error state or show a toast
     }
   };
 
-  return {
-    staff,
-    setStaff,
-    loadStaffData
-  };
+  useEffect(() => {
+    loadStaffData();
+  }, []);
+
+  return { staff, loadStaffData };
 };
